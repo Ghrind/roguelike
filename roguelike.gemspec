@@ -31,5 +31,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency 'rspec'
 
+  # TODO In order to support utf-8, when ought to use this library
+  # spec.add_runtime_dependency 'ncursesw'
   spec.add_runtime_dependency 'curses'
 end

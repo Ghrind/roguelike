@@ -24,9 +24,10 @@ module Roguelike
           @width.times do |x|
 
             direction = cell_direction x, y
-            symbol = direction == :none ? '.' : '#'
+            wall = direction != :none
 
-            cells << { x: x + @left - 1, y: y + @top - 1, symbol: symbol, direction: direction }
+            cell = Cell.new x + @left - 1, y + @top - 1, direction: direction, wall: wall
+            cells << cell
           end
         end
         cells
@@ -62,25 +63,23 @@ module Roguelike
 
     def initialize(options = {})
       @options = {
-        height: 100,
-        width: 100,
-        iterations: 15,
+        height: 20,
+        width: 20,
+        iterations: 150,
         room_min_size: 6,
         room_max_size: 13
       }.merge(options)
 
-      @cells = []
-      @all_cells = []
+      @grid = Grid.new
     end
 
-    # TODO Check why boundaries are enforced
     def generate
       # First we put a room at the center of the map
       last_room = add_room((@options[:width] + @options[:room_min_size]) / 2, (@options[:height] + @options[:room_min_size]) / 2, @options[:room_min_size], @options[:room_min_size])
 
       # Add the starting location in the room
-      start_cell = last_room.cells.find_all{ |c| c[:symbol] == '.' }.sample
-      @cells[start_cell[:y]][start_cell[:x]] = '@'
+      start_cell = last_room.cells.find_all{ |c| c.walkable? }.sample
+      @grid.player = { x: start_cell.x, y: start_cell.y }
 
       # Main loop
       @options[:iterations].times do
@@ -89,26 +88,35 @@ module Roguelike
         case rand(3)
         when (0..1)
           # Attached to last room
-          cell = last_room.cells.find_all{ |c| c[:symbol] == '#' && %i[top bottom left right].include?(c[:direction]) }.sample
+          cell = last_room.cells.find_all{ |c| c.wall && %i[top bottom left right].include?(c.direction) }.sample
         else
           # Attached to a random room
-          cell = @all_cells.find_all{ |c| c[:symbol] == '#' && %i[top bottom left right].include?(c[:direction]) }.sample
+          cell = @grid.all_cells.find_all{ |c| c.wall && %i[top bottom left right].include?(c.direction) }.sample
         end
 
         # These are the new room's dimensions
         a = rand(1 + @options[:room_max_size] - @options[:room_min_size]) + @options[:room_min_size]
         b = rand(1 + @options[:room_max_size] - @options[:room_min_size]) + @options[:room_min_size]
 
+        # Make corridors
+        if rand(3) == 0
+          if rand(1) == 0
+            a = 3
+          else
+            b = 3
+          end
+        end
+
         # Add the new room depending on the wall's direction
-        new_room = case cell[:direction]
+        new_room = case cell.direction
         when :top
-          add_room cell[:y] - b + 2, cell[:x], b, a
+          add_room cell.y - b + 2, cell.x, b, a
         when :bottom
-          add_room cell[:y] + 1, cell[:x], b, a
+          add_room cell.y + 1, cell.x, b, a
         when :left
-          add_room cell[:y], cell[:x] - b + 2, a, b
+          add_room cell.y, cell.x - b + 2, a, b
         when :right
-          add_room cell[:y], cell[:x] + 1, a, b
+          add_room cell.y, cell.x + 1, a, b
         else
           raise "unknown direction '#{cell[:direction]}'"
         end
@@ -116,18 +124,31 @@ module Roguelike
         next unless new_room
 
         # Remove the wall at junction cell
-        @cells[cell[:y]][cell[:x]] = '.'
+        @grid.add_cell Cell.new(cell.x, cell.y, wall: false), true
 
         last_room = new_room
       end
 
       # Add exit in the last room
-      end_cell = last_room.cells.find_all{ |c| c[:symbol] == '.' }.sample
-      @cells[end_cell[:y]][end_cell[:x]] = '>'
+      end_cell = last_room.cells.find_all { |c| c.walkable? }.sample
+      @grid.destination = end_cell
 
-      @cells
+      @grid.prepare!
+      @grid
     end
 
+    # Is the cell available for another cell?
+    # At building time, a cell is available if it is in the grid's boundaries and if takes place on an empty cell or a wall
+    #
+    # @param x [Fixnum] X position of the cell
+    # @param y [Fixnum] Y position of the cell
+    # @return [Boolean] Is the position on the grid free to be replaced by another cell.
+    def cell_available?(x, y)
+      return false if x >= @options[:width] || y >= @options[:height] || x < 0 || y < 0
+      cell = @grid.lookup(y, x)
+      cell.nil? || !!cell.wall
+    end
+    
     private
 
     # Add a room at given location
@@ -135,19 +156,14 @@ module Roguelike
     def add_room(top, left, height, width)
       room = Room.new top, left, height, width
 
-      # Check if all floors aren't already occupied
-      room.cells.each do |cell|
-        if @cells[cell[:y]] && @cells[cell[:y]][cell[:x]] == '.'
-          return false
-        end
-      end
+      # Check if all cells can be added
+      return false unless room.cells.all? { |c| cell_available? c.x, c.y }
     
       # Add cells to grid and cells list
       room.cells.each do |cell|
-        @cells[cell[:y]] ||= []
-        @cells[cell[:y]][cell[:x]] = cell[:symbol]
-        @all_cells << cell
+        @grid.add_cell cell, true
       end
+
       room
     end
   end

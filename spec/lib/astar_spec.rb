@@ -7,11 +7,12 @@ RSpec.describe Roguelike::AStar do
   describe '#find_path' do
     context 'when there is a path' do
       it 'should prefer straight lines over zigzag' do
-        grid = Roguelike::Grid.new ['#####',
-                                    '#...#',
-                                    '#...#',
-                                    '#...#',
-                                    '#####']
+        grid = grid_from_map ['#####',
+                              '#...#',
+                              '#...#',
+                              '#...#',
+                              '#####']
+
         start = grid.lookup 2, 1
         goal = grid.lookup 2, 3
 
@@ -21,10 +22,11 @@ RSpec.describe Roguelike::AStar do
       end
 
       it 'should use diagonals when needed' do
-        grid = Roguelike::Grid.new ['####',
-                                    '#..#',
-                                    '#..#',
-                                    '####']
+        grid = grid_from_map ['####',
+                              '#..#',
+                              '#..#',
+                              '####']
+
         start = grid.lookup 1, 1
         goal = grid.lookup 2, 2
 
@@ -34,9 +36,10 @@ RSpec.describe Roguelike::AStar do
       end
 
       it 'should return all the cells of the path' do
-        grid = Roguelike::Grid.new ['#####',
-                                    '#...#',
-                                    '#####']
+        grid = grid_from_map ['#####',
+                              '#...#',
+                              '#####']
+
         start = grid.lookup 1, 1
         goal = grid.lookup 1, 3
 
@@ -46,11 +49,12 @@ RSpec.describe Roguelike::AStar do
       end
 
       it 'should avoid abstacles' do
-        grid = Roguelike::Grid.new ['######',
-                                    '#....#',
-                                    '####.#',
-                                    '#....#',
-                                    '######']
+        grid = grid_from_map ['######',
+                              '#....#',
+                              '####.#',
+                              '#....#',
+                              '######']
+
         start = grid.lookup 1, 1
         goal = grid.lookup 3, 1
 
@@ -61,11 +65,12 @@ RSpec.describe Roguelike::AStar do
     end
     context 'when there is no path' do
       it 'should return nil' do
-        grid = Roguelike::Grid.new ['######',
-                                    '#....#',
-                                    '######',
-                                    '#....#',
-                                    '######']
+        grid = grid_from_map ['######',
+                              '#....#',
+                              '######',
+                              '#....#',
+                              '######']
+
         start = grid.lookup 1, 1
         goal = grid.lookup 3, 1
 

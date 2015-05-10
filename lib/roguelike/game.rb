@@ -25,10 +25,10 @@ module Roguelike
 
       if map_filename and File.exists? map_filename
         map = File.readlines map_filename
+        grid = Grid.new_from_map map
       else
-        map = GridBuilder.new.generate # TODO We should either create a grid or a map but not a mix of both.
+        grid = GridBuilder.new.generate
       end
-      grid = Grid.new map
 
       while true
         begin
@@ -93,6 +93,9 @@ module Roguelike
       end
 
       add_cell win, delta_x, delta_y, '@', Curses::COLOR_RED
+
+      win.setpos 0, 0
+      win.addstr "x: #{grid.player[:x]} y: #{grid.player[:y]}"
 
       win.refresh
 
