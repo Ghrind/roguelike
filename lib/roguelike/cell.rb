@@ -3,7 +3,8 @@ module Roguelike
   #
   # Every cell has pointer to its neighbours in order to ease the path finding.
   class Cell
-    attr_reader :wall, :x, :y
+    attr_accessor :x, :y
+    attr_reader :wall
     attr_accessor :neighbours
     attr_accessor :direction # An indication of where is the outside of the room from this cell
 

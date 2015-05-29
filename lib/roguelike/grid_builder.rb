@@ -1,3 +1,5 @@
+require_relative 'feature'
+
 module Roguelike
   class GridBuilder
     class Room
