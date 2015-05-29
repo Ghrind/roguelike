@@ -18,6 +18,8 @@ module Roguelike
       Ncurses.init_pair(Ncurses::COLOR_RED, Ncurses::COLOR_RED, Ncurses::COLOR_BLACK)
       Ncurses.init_pair(Ncurses::COLOR_GREEN, Ncurses::COLOR_GREEN, Ncurses::COLOR_BLACK)
       Ncurses.init_pair(Ncurses::COLOR_WHITE, Ncurses::COLOR_WHITE, Ncurses::COLOR_BLACK)
+
+      @target = { x: 0, y: 0 }
     end
 
     # @param map_filename [String] The filename of a map
@@ -26,27 +28,28 @@ module Roguelike
 
       if map_filename and File.exists? map_filename
         map = File.readlines map_filename
-        grid = Grid.new_from_map map
+        @grid = Grid.new_from_map map
       else
-        grid = GridBuilder.new.generate
+        @grid = GridBuilder.new.generate
       end
 
-      while true
-        begin
-          # TODO redraw only if something happened
-          win = draw grid
-          command = command_from_key_combination(win.getch)
-          grid.tick(command)
-        rescue Interrupt
-          break
-        ensure
-          win.del if win
-          Ncurses.echo
-          Ncurses.nl
-          Ncurses.endwin
+      win = draw @grid
+      redraw = false
+      begin
+        while true
+          if redraw
+            win = draw @grid
+          end
+          redraw = command_from_key_combination(win.getch)
         end
+      rescue Interrupt
+        
+      ensure
+        win.del if win
+        Ncurses.echo
+        Ncurses.nl
+        Ncurses.endwin
       end
-
 
       puts 'Goodbye...'
     end
@@ -68,8 +71,8 @@ module Roguelike
       win = Ncurses::WINDOW.new Ncurses.LINES, Ncurses.COLS, 0, 0
       win.border *([0]*8)
 
-      delta_x = (Ncurses.LINES - 2) / 2
-      delta_y = (Ncurses.COLS - 2) / 2
+      delta_y = (Ncurses.LINES - 2) / 2
+      delta_x = (Ncurses.COLS - 2) / 2
 
       center = grid.player
 
@@ -95,24 +98,55 @@ module Roguelike
       end
 
       add_cell win, delta_x, delta_y, '@', Ncurses::COLOR_RED
+      add_cell win, @target[:x] - center[:x] + delta_x, @target[:y] - center[:y] + delta_y, '+', Ncurses::COLOR_RED
 
       win.color_set Ncurses::COLOR_WHITE, nil
       win.mvaddstr 1, 1, "x: #{grid.player[:x]} y: #{grid.player[:y]}"
+      win.mvaddstr 2, 1, "x: #{@target[:x]} y: #{@target[:y]}"
 
       win
     end
 
     def add_cell(win, x, y, symbol, color)
       win.color_set color, nil
-      win.mvaddstr x, y, symbol
+      win.mvaddstr y, x, symbol
     end
 
+    # @return [Boolean] Should the grid be redrawn
     def command_from_key_combination(key)
-      case key.chr
-      when ' '
-        'player.wait'
+      case key
+      when 65 # Up arrow
+      when 122 # a
+        # 'target.move_up'
+        @target[:y] -= 1
+        true
+      when 66 # Down arrow
+      when 115 # s
+        # 'target.move_down'
+        @target[:y] += 1
+        true
+      when 67 # Right arrow
+      when 100 # d
+        # 'target.move_right'
+        @target[:x] += 1
+        true
+      when 68 # Left arrow
+      when 113 # q
+        # 'target.move_left'
+        @target[:x] -= 1
+        true
+      when 99 # c
+        # 'target.center'
+        @target[:x] = @grid.player[:x]
+        @target[:y] = @grid.player[:y]
+        true
+      when 32 # Space
+        @grid.tick 'player.wait'
+        true
       else
-        'system.none'
+        # 'system.none'
+        show_message "Unknown key with code: #{key}"
+        false
       end
     end
   end

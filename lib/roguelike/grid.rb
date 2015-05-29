@@ -65,7 +65,11 @@ module Roguelike
     end
 
     def tick(command)
-      return if command == 'system.none'
+      case command
+      when 'player.wait'
+      else
+        return
+      end
 
       start = lookup(@player[:y], @player[:x])
 
