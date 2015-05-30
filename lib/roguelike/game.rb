@@ -1,5 +1,5 @@
 require 'ncursesw'
-require_relative 'grid'
+require_relative 'level'
 
 module Roguelike
   # Inspired by https://github.com/aka-bo/ruby-curses-conway
@@ -26,19 +26,20 @@ module Roguelike
     def play(map_filename = nil)
       show_message("Hit Any Key. (Interrupt to exit)")
 
-      if map_filename and File.exists? map_filename
-        map = File.readlines map_filename
-        @grid = Grid.new_from_map map
-      else
-        @grid = GridBuilder.new.generate
-      end
+      # TODO
+      #if map_filename and File.exists? map_filename
+      #  map = File.readlines map_filename
+      #  @level = Grid.new_from_map map
+      #else
+        @level = LevelBuilder.new.generate
+      #end
 
-      win = draw @grid
+      win = draw @level
       redraw = false
       begin
         while true
           if redraw
-            win = draw @grid
+            win = draw @level
           end
           redraw = command_from_key_combination(win.getch)
         end
@@ -67,41 +68,37 @@ module Roguelike
       win.del
     end
 
-    def draw(grid)
+    def draw(level)
       win = Ncurses::WINDOW.new Ncurses.LINES, Ncurses.COLS, 0, 0
       win.border *([0]*8)
 
       delta_y = (Ncurses.LINES - 2) / 2
       delta_x = (Ncurses.COLS - 2) / 2
 
-      center = grid.player
+      center = level.player
 
-      grid.all_cells.each do |c|
+      level.cells.each do |c|
         next if (center[:x] - c.x).abs > delta_x || (center[:y] - c.y).abs > delta_y
-        if c.wall
-          add_cell(win, c.x - center[:x] + delta_x, c.y - center[:y] + delta_y, '#', Ncurses::COLOR_BLACK)
-        else
-          add_cell(win, c.x - center[:x] + delta_x, c.y - center[:y] + delta_y, '.', Ncurses::COLOR_BLACK)
-        end
+        add_cell(win, c.x - center[:x] + delta_x, c.y - center[:y] + delta_y, c.symbol, Ncurses::COLOR_BLACK)
       end
 
-      if grid.path
-        grid.path.each do |c|
+      if level.path
+        level.path.each do |c|
           next if (center[:x] - c.x).abs > delta_x || (center[:y] - c.y).abs > delta_y
-          add_cell win, c.x - center[:x] + delta_x, c.y - center[:y] + delta_y, '.', Ncurses::COLOR_GREEN
+          add_cell win, c.x - center[:x] + delta_x, c.y - center[:y] + delta_y, c.symbol, Ncurses::COLOR_GREEN
         end
       end
 
-      grid.stalkers.each do |c|
+      level.stalkers.each do |c|
         next if (center[:x] - c[:x]).abs > delta_x || (center[:y] - c[:y]).abs > delta_y
-        add_cell win, c[:x] - center[:x] + delta_x, c[:y] - center[:y] + delta_y, 's', Ncurses::COLOR_GREEN
+        add_cell win, c[:x] - center[:x] + delta_x, c[:y] - center[:y] + delta_y, '!', Ncurses::COLOR_GREEN
       end
 
       add_cell win, delta_x, delta_y, '@', Ncurses::COLOR_RED
       add_cell win, @target[:x] - center[:x] + delta_x, @target[:y] - center[:y] + delta_y, '+', Ncurses::COLOR_RED
 
       win.color_set Ncurses::COLOR_WHITE, nil
-      win.mvaddstr 1, 1, "x: #{grid.player[:x]} y: #{grid.player[:y]}"
+      win.mvaddstr 1, 1, "x: #{level.player[:x]} y: #{level.player[:y]}"
       win.mvaddstr 2, 1, "x: #{@target[:x]} y: #{@target[:y]}"
 
       win
@@ -112,7 +109,7 @@ module Roguelike
       win.mvaddstr y, x, symbol
     end
 
-    # @return [Boolean] Should the grid be redrawn
+    # @return [Boolean] Should the level be redrawn
     def command_from_key_combination(key)
       case key
       when 65 # Up arrow
@@ -137,11 +134,11 @@ module Roguelike
         true
       when 99 # c
         # 'target.center'
-        @target[:x] = @grid.player[:x]
-        @target[:y] = @grid.player[:y]
+        @target[:x] = @level.player[:x]
+        @target[:y] = @level.player[:y]
         true
       when 32 # Space
-        @grid.tick 'player.wait'
+        @level.tick 'player.wait'
         true
       else
         # 'system.none'

@@ -1,100 +1,43 @@
 require 'spec_helper'
 
 RSpec.describe Roguelike::Feature do
-
-  def build_feature_from_map(map)
-    feature = Roguelike::Feature.new
-    map.each_with_index do |row, y|
-      row.split(//).each_with_index do |symbol, x|
-        case symbol
-        when '#'
-          feature.add_cell Roguelike::Cell.new x, y, wall: true
-        when '.'
-          feature.add_cell Roguelike::Cell.new x, y
-        end
-      end
-    end
-    feature
-  end
-
   let(:feature_1) {
-    feature = Roguelike::Feature.new
-    feature.add_cell Roguelike::Cell.new 0, 2, wall: true
-    feature.add_cell Roguelike::Cell.new 1, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 1, 1, wall: true
-    feature.add_cell Roguelike::Cell.new 1, 2, wall: true
-    feature.add_cell Roguelike::Cell.new 2, 3, wall: true
-    feature
+    feature_from_map [
+      ' # ',
+      ' # ',
+      '## ',
+      '  #'
+    ]
   }
 
   let(:room_1) {
-    feature = Roguelike::Feature.new
-    feature.add_cell Roguelike::Cell.new 0, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 0, 1, wall: true
-    feature.add_cell Roguelike::Cell.new 0, 2, wall: true
-    feature.add_cell Roguelike::Cell.new 0, 3, wall: true
-    feature.add_cell Roguelike::Cell.new 0, 4, wall: true
-
-    feature.add_cell Roguelike::Cell.new 5, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 5, 1, wall: true
-    feature.add_cell Roguelike::Cell.new 5, 2, wall: true
-    feature.add_cell Roguelike::Cell.new 5, 3, wall: true
-    feature.add_cell Roguelike::Cell.new 5, 4, wall: true
-
-    feature.add_cell Roguelike::Cell.new 1, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 2, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 3, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 4, 0, wall: true
-
-    feature.add_cell Roguelike::Cell.new 1, 4, wall: true
-    feature.add_cell Roguelike::Cell.new 2, 4, wall: true
-    feature.add_cell Roguelike::Cell.new 3, 4, wall: true
-    feature.add_cell Roguelike::Cell.new 4, 4, wall: true
-
-    feature
+    feature_from_map [
+      '######',
+      '#    #',
+      '#    #',
+      '#    #',
+      '######'
+    ]
   }
 
-  # ###
-  # #.#
-  # ###
   let(:room_2) {
-    feature = Roguelike::Feature.new
-    feature.add_cell Roguelike::Cell.new 0, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 0, 1, wall: true
-    feature.add_cell Roguelike::Cell.new 0, 2, wall: true
-
-    feature.add_cell Roguelike::Cell.new 1, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 1, 1, wall: false
-    feature.add_cell Roguelike::Cell.new 1, 2, wall: true
-
-    feature.add_cell Roguelike::Cell.new 2, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 2, 1, wall: true
-    feature.add_cell Roguelike::Cell.new 2, 2, wall: true
-
-    feature
+    feature_from_map [
+      '###',
+      '#.#',
+      '###'
+    ]
   }
 
-  # ###
-  # #.#
-  # # #
   let(:room_3) {
-    feature = Roguelike::Feature.new
-    feature.add_cell Roguelike::Cell.new 0, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 0, 1, wall: true
-    feature.add_cell Roguelike::Cell.new 0, 2, wall: true
-
-    feature.add_cell Roguelike::Cell.new 1, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 1, 1, wall: false
-
-    feature.add_cell Roguelike::Cell.new 2, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 2, 1, wall: true
-    feature.add_cell Roguelike::Cell.new 2, 2, wall: true
-
-    feature
+    feature_from_map [
+      '###',
+      '#.#',
+      '# #'
+    ]
   }
 
   let(:room_4) {
-    build_feature_from_map [
+    feature_from_map [
       '#######',
       '#.....#',
       '##...##',
@@ -104,7 +47,7 @@ RSpec.describe Roguelike::Feature do
   }
 
   let(:room_5) {
-    build_feature_from_map [
+    feature_from_map [
       '#######',
       '#..#..#',
       '#.....#',
@@ -114,27 +57,35 @@ RSpec.describe Roguelike::Feature do
   }
 
   let(:corridor_1) {
-    feature = Roguelike::Feature.new
-    feature.add_cell Roguelike::Cell.new 0, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 0, 1, wall: true
-    feature.add_cell Roguelike::Cell.new 0, 2, wall: true
-
-    feature.add_cell Roguelike::Cell.new 5, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 5, 1, wall: true
-    feature.add_cell Roguelike::Cell.new 5, 2, wall: true
-
-    feature.add_cell Roguelike::Cell.new 1, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 2, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 3, 0, wall: true
-    feature.add_cell Roguelike::Cell.new 4, 0, wall: true
-
-    feature.add_cell Roguelike::Cell.new 1, 2, wall: true
-    feature.add_cell Roguelike::Cell.new 2, 2, wall: true
-    feature.add_cell Roguelike::Cell.new 3, 2, wall: true
-    feature.add_cell Roguelike::Cell.new 4, 2, wall: true
-
-    feature
+    Roguelike::Corridor.new.build 6, 3
   }
+
+  describe '#mergeable' do
+    context 'when all the cells are free' do
+      it 'should return true' do
+        feature_1 = feature_from_map ['']
+        feature_2 = feature_from_map ['#']
+
+        expect(feature_1.mergeable?(feature_2, 0, 0, 0, 0)).to eq true
+      end
+    end
+    context  'when one of the cells is a wall' do
+      it 'should return true' do
+        feature_1 = feature_from_map ['#']
+        feature_2 = feature_from_map ['#']
+
+        expect(feature_1.mergeable?(feature_2, 0, 0, 0, 0)).to eq true
+      end
+    end
+    context 'when one of the cells is not a wall' do
+      it 'should return false' do
+        feature_1 = feature_from_map ['.']
+        feature_2 = feature_from_map ['#']
+
+        expect(feature_1.mergeable?(feature_2, 0, 0, 0, 0)).to eq false
+      end
+    end
+  end
 
   describe '#to_map' do
     it 'should display the cells in the right direction' do
@@ -142,14 +93,14 @@ RSpec.describe Roguelike::Feature do
       feature.add_cell Roguelike::Cell.new 0, 0
       feature.add_cell Roguelike::Cell.new 0, 1
 
-      expect(feature.to_map).to eq ['.', '.']
+      expect(feature.to_map).to eq ['?', '?']
     end
 
     it 'should not mind having cells with negative coordinates' do
       feature = Roguelike::Feature.new
       feature.add_cell Roguelike::Cell.new -1, -2
 
-      expect(feature.to_map).to eq ['.']
+      expect(feature.to_map).to eq ['?']
     end
 
     it 'should return an array of strings' do
@@ -195,10 +146,6 @@ RSpec.describe Roguelike::Feature do
 
         expect(room_3.to_map).to eq expected_map
       end
-      it 'should change direction' do
-        room_3.rotate :south
-        expect(room_3.direction).to eq :south
-      end
     end
     context 'from north to west' do
       it 'should rotate cells properly' do
@@ -212,10 +159,6 @@ RSpec.describe Roguelike::Feature do
 
         expect(room_3.to_map).to eq expected_map
       end
-      it 'should change direction' do
-        room_3.rotate :west
-        expect(room_3.direction).to eq :west
-      end
     end
     context 'from north to east' do
       it 'should rotate cells properly' do
@@ -228,10 +171,6 @@ RSpec.describe Roguelike::Feature do
         ]
 
         expect(room_3.to_map).to eq expected_map
-      end
-      it 'should change direction' do
-        room_3.rotate :east
-        expect(room_3.direction).to eq :east
       end
     end
   end
@@ -285,7 +224,7 @@ RSpec.describe Roguelike::Feature do
       expected_map = [
         '######     ',
         '#    ######',
-        '#    #    #',
+        '#    #....#',
         '#    ######',
         '######     '
       ]
@@ -295,8 +234,7 @@ RSpec.describe Roguelike::Feature do
 
     context 'with the junction option' do
       it 'should replace junction cell by given cell' do
-        cell = Roguelike::Cell.new 0, 0
-        expect(room_1.merge(corridor_1, 5, 2, 0, 1, junction: cell).lookup(5, 2)).to eq cell
+        expect(room_1.merge(corridor_1, 5, 2, 0, 1, junction: :floor).lookup(5, 2).symbol).to eq '.'
       end
     end
   end
@@ -373,7 +311,7 @@ RSpec.describe Roguelike::Feature do
 
       expect(feature.to_map).to eq expected_map
     end
-    it 'should set the right direction to the junctions' do
+    it 'should set the right direction of the junctions' do
       cells = room_2.available_junctions
       feature = Roguelike::Feature.new
       cells.each { |c| feature.add_cell c }
@@ -390,7 +328,7 @@ RSpec.describe Roguelike::Feature do
       j1 = room_4.available_junctions.find { |j| j.direction == :west }
       j2 = room_5.available_junctions.find { |j| j.direction == :south }
       room_5.rotate j1.direction
-      room_4.merge room_5, j1.x, j1.y, j2.x, j2.y, junction: Roguelike::Cell.new(0, 0)
+      room_4.merge room_5, j1.x, j1.y, j2.x, j2.y, junction: :floor
 
       expected_map = [
         '####       ',
@@ -404,6 +342,55 @@ RSpec.describe Roguelike::Feature do
       ]
 
       expect(room_4.to_map).to eq expected_map
+    end
+  end
+end
+
+RSpec.describe Roguelike::SquareRoom do
+  describe '#build' do
+    it 'should build a square room' do
+      feature = Roguelike::SquareRoom.new
+      expected_map = [
+        '####',
+        '#..#',
+        '#..#',
+        '#..#',
+        '####'
+
+      ]
+      expect(feature.build(4,5).to_map).to eq expected_map
+    end
+  end
+end
+
+RSpec.describe Roguelike::Corridor do
+  let(:corridor_1) {
+    Roguelike::Corridor.new.build 3, 6
+  }
+
+  describe '#available_junctions' do
+    context 'when force_gravity is :north' do
+      it 'should find the right junctions' do
+        cells = corridor_1.available_junctions(:north)
+
+        coordinates = cells.map { |c| [c.x, c.y] }
+        expect(coordinates.size).to eq 3
+        expect(coordinates).to include [1, 0]
+        expect(coordinates).to include [0, 1]
+        expect(coordinates).to include [2, 1]
+      end
+    end
+
+    context 'when force_gravity is :south' do
+      it 'should find the right junctions' do
+        cells = corridor_1.available_junctions(:south)
+
+        coordinates = cells.map { |c| [c.x, c.y] }
+        expect(coordinates.size).to eq 3
+        expect(coordinates).to include [1, 5]
+        expect(coordinates).to include [0, 4]
+        expect(coordinates).to include [2, 4]
+      end
     end
   end
 end

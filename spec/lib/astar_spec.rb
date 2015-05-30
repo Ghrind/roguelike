@@ -4,17 +4,18 @@ RSpec.describe Roguelike::AStar do
   def coordinates(cell)
     [cell.y, cell.x]
   end
+
   describe '#find_path' do
     context 'when there is a path' do
       it 'should prefer straight lines over zigzag' do
-        grid = grid_from_map ['#####',
-                              '#...#',
-                              '#...#',
-                              '#...#',
-                              '#####']
+        level = level_from_map ['#####',
+                                '#...#',
+                                '#...#',
+                                '#...#',
+                                '#####']
 
-        start = grid.lookup 2, 1
-        goal = grid.lookup 2, 3
+        start = level.lookup 1, 2
+        goal = level.lookup 3, 2
 
         astar = Roguelike::AStar.new
 
@@ -22,13 +23,13 @@ RSpec.describe Roguelike::AStar do
       end
 
       it 'should use diagonals when needed' do
-        grid = grid_from_map ['####',
-                              '#..#',
-                              '#..#',
-                              '####']
+        level = level_from_map ['####',
+                                '#..#',
+                                '#..#',
+                                '####']
 
-        start = grid.lookup 1, 1
-        goal = grid.lookup 2, 2
+        start = level.lookup 1, 1
+        goal = level.lookup 2, 2
 
         astar = Roguelike::AStar.new
 
@@ -36,12 +37,12 @@ RSpec.describe Roguelike::AStar do
       end
 
       it 'should return all the cells of the path' do
-        grid = grid_from_map ['#####',
-                              '#...#',
-                              '#####']
+        level = level_from_map ['#####',
+                                '#...#',
+                                '#####']
 
-        start = grid.lookup 1, 1
-        goal = grid.lookup 1, 3
+        start = level.lookup 1, 1
+        goal = level.lookup 3, 1
 
         astar = Roguelike::AStar.new
 
@@ -49,14 +50,14 @@ RSpec.describe Roguelike::AStar do
       end
 
       it 'should avoid abstacles' do
-        grid = grid_from_map ['######',
-                              '#....#',
-                              '####.#',
-                              '#....#',
-                              '######']
+        level = level_from_map ['######',
+                                '#....#',
+                                '####.#',
+                                '#....#',
+                                '######']
 
-        start = grid.lookup 1, 1
-        goal = grid.lookup 3, 1
+        start = level.lookup 1, 1
+        goal = level.lookup 1, 3
 
         astar = Roguelike::AStar.new
 
@@ -65,14 +66,14 @@ RSpec.describe Roguelike::AStar do
     end
     context 'when there is no path' do
       it 'should return nil' do
-        grid = grid_from_map ['######',
-                              '#....#',
-                              '######',
-                              '#....#',
-                              '######']
+        level = level_from_map ['######',
+                                '#....#',
+                                '######',
+                                '#....#',
+                                '######']
 
-        start = grid.lookup 1, 1
-        goal = grid.lookup 3, 1
+        start = level.lookup 1, 1
+        goal = level.lookup 1, 3
 
         astar = Roguelike::AStar.new
 

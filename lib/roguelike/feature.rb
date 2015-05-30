@@ -1,17 +1,23 @@
 module Roguelike
   class Feature
-    attr_reader :direction, :cells
+    attr_reader :cells, :grid
 
     GRAVITIES = [:north, :south, :east, :west]
 
     ROTATIONS = {
-      north_south: ->(x, y) { [x, -y] },
-      north_west: ->(x, y) { [y, -x] },
-      north_east: ->(x, y) { [-y, x] }
+      south: ->(x, y) { [x, -y] },
+      west: ->(x, y) { [y, -x] },
+      east: ->(x, y) { [-y, x] }
+    }
+
+    CELL_ATTRIBUTES = {
+      wall: { symbol: '#', wall: true },
+      floor: { symbol: '.' },
+      starting_location: { symbol: 's', start: true },
+      door: { symbol: 'D' }
     }
 
     def initialize
-      @direction = :north
       reset
     end
 
@@ -25,12 +31,22 @@ module Roguelike
       @grid[cell.y][cell.x] = cell
     end
 
+    def mergeable?(other_feature, x1, y1, x2, y2)
+      other_feature.cells.each do |cell|
+        x = cell.x - x2 + x1
+        y = cell.y - y2 + y1
+        cell = lookup(x, y)
+        return false if cell && !cell.wall
+      end
+      true
+    end
+
     def lookup(x, y)
       @grid[y][x]
     end
 
     # FIXME The code seems a little 'black magick'
-    def available_junctions
+    def available_junctions(force_gravity = nil)
       junctions = []
       @cells.each do |cell|
         next unless cell.wall
@@ -44,7 +60,9 @@ module Roguelike
 
         next unless neighbours.size == 3
 
-        GRAVITIES.each do |gravity|
+        gravities = force_gravity ? [force_gravity] : GRAVITIES
+
+        gravities.each do |gravity|
           feature = Feature.new
           center = cell.dup
           feature.add_cell center, -center.x
@@ -85,20 +103,35 @@ module Roguelike
 
     def map_symbol(cell)
       return ' ' if cell.nil?
-      return '#' if cell.wall
-      '.'
+      cell.symbol || '?'
+    end
+
+    def build(map)
+      reset
+      map.each_with_index do |row, y|
+        row.split(//).each_with_index do |symbol, x|
+          attributes = CELL_ATTRIBUTES.values.find { |attrs| attrs[:symbol] == symbol }
+          next unless attributes
+          add_cell Roguelike::Cell.new x, y, attributes
+        end
+      end
+      self
+    end
+
+    def make_cell(type)
+      raise ArgumentError, "Unknown cell type: #{type.inspect}" unless CELL_ATTRIBUTES.has_key?(type)
+      Cell.new 0, 0, CELL_ATTRIBUTES[type]
     end
 
     def rotate(direction)
-      return self if direction == @direction
-      rotation = ROTATIONS[:"#{@direction}_#{direction}"]
+      return self if direction == :north
+      rotation = ROTATIONS[direction]
       cells = @cells.dup
       reset
       cells.each do |cell|
         x, y = rotation.call cell.x, cell.y
         add_cell cell, x, y
       end
-      @direction = direction
       self
     end
 
@@ -119,9 +152,8 @@ module Roguelike
         add_cell cell, cell.x - x2 + x1, cell.y - y2 + y1
       end
 
-      cell = options[:junction]
-      if cell
-        add_cell cell, x1, y1
+      if options[:junction]
+        add_cell make_cell(options[:junction]), x1, y1
       end
 
       self
@@ -132,6 +164,37 @@ module Roguelike
     def reset
       @cells = []
       @grid = Hash.new { |hash, key| hash[key] = {} }
+    end
+  end
+
+  class SquareRoom < Feature
+    def build(width, height)
+      reset
+      height.times do |y|
+        width.times do |x|
+          type = :floor
+          type = :wall if x == 0 || y == 0 || x.next == width || y.next == height
+          add_cell make_cell(type), x, y
+        end
+      end
+      self
+    end
+  end
+
+  class Corridor < SquareRoom
+    def available_junctions(force_gravity)
+      junctions = super(force_gravity)
+      case force_gravity
+      when :north
+        other_junctions = super(:west) + super(:east)
+        max_height = other_junctions.map{|j| j.y}.min
+        junctions += other_junctions.find_all { |j| j.y == max_height }
+      when :south
+        other_junctions = super(:west) + super(:east)
+        min_height = other_junctions.map{|j| j.y}.max
+        junctions += other_junctions.find_all { |j| j.y == min_height }
+      end
+      junctions
     end
   end
 end
