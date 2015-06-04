@@ -45,7 +45,6 @@ module Roguelike
       @grid[y][x]
     end
 
-    # FIXME The code seems a little 'black magick'
     def available_junctions(force_gravity = nil)
       junctions = []
       @cells.each do |cell|
@@ -59,24 +58,28 @@ module Roguelike
 
         gravities = force_gravity ? [force_gravity] : GRAVITIES
 
-        gravities.each do |gravity|
-          feature = Feature.new
-          center = cell.clone
-          feature.add_cell center, -center.x
-          neighbours.each { |c| feature.add_cell c.clone, -c.x }
-          feature.rotate gravity
+        down = lookup(*cell.coordinates.at(:down))
+        left = lookup(*cell.coordinates.at(:left))
+        right = lookup(*cell.coordinates.at(:right))
+        up = lookup(*cell.coordinates.at(:up))
 
-          cell_1 = feature.lookup(*center.coordinates.at(:right))
-          cell_2 = feature.lookup(*center.coordinates.at(:left))
-          cell_3 = feature.lookup(*center.coordinates.at(:down))
+        wall_down = down && down.wall
+        wall_left = left && left.wall
+        wall_right = right && right.wall
+        wall_up = up && up.wall
 
-          next unless cell_1 && cell_1.wall
-          next unless cell_2 && cell_2.wall
-          next unless cell_3 && !cell_3.wall
-
-          cell.direction = gravity
+        if gravities.include?(:east) && up && wall_up && down && wall_down && left && !wall_left
+          cell.direction = :east
           junctions << cell
-          break
+        elsif gravities.include?(:west) && up && wall_up && down && wall_down && right && !wall_right
+          cell.direction = :west
+          junctions << cell
+        elsif gravities.include?(:south) && left && wall_left && right && wall_right && up && !wall_up
+          cell.direction = :south
+          junctions << cell
+        elsif gravities.include?(:north) && left && wall_left && right && wall_right && down && !wall_down
+          cell.direction = :north
+          junctions << cell
         end
       end
       junctions
