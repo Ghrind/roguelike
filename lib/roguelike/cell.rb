@@ -1,26 +1,74 @@
+require_relative 'coordinates'
+
 module Roguelike
   # Contains all the informations about a square from the game.
   #
   # Every cell has pointer to its neighbours in order to ease the path finding.
   class Cell
-    attr_accessor :wall, :x, :y
-    attr_reader :symbol, :start
     attr_accessor :neighbours
-    attr_accessor :direction # An indication of where is the outside of the room from this cell
+    attr_reader :creature
+    attr_reader :coordinates
+
+    ATTRIBUTES = {
+      wall: false,       # Is the cell a boudary of an open space?
+      direction: :none,  # An indication of where is the outside of the room from this cell
+      symbol: '?',       # How is the cell displayed on a map.
+      start: false,      # DEV Is this cell the starting location of the level
+      transparent: false # Can creatures see through this cell
+    }
+
+    attr_accessor *ATTRIBUTES.keys
 
     # @param x [Fixnum] The x position of the cell on the grid
     # @param y [Fixnum] The y position of the cell on the grid
     # @param wall [Boolean] Is the cell a wall?
     def initialize(x, y, attributes = {})
-      @x = x
-      @y = y
+      @coordinates = Roguelike::Coordinates.new x, y
 
-      @wall = attributes[:wall]
-      @direction = attributes[:direction]
-      @symbol = attributes[:symbol]
-      @start = attributes[:start]
+      ATTRIBUTES.merge(attributes).each_pair do |k, v|
+        send "#{k}=", v
+      end
 
       @neighbours = []
+      @creature = nil
+    end
+
+    def clone
+      attributes = Hash[ATTRIBUTES.keys.map { |k| [k, send(k)] }]
+      self.class.new x, y, attributes
+    end
+
+    def x
+      coordinates.x
+    end
+
+    def y
+      coordinates.y
+    end
+
+    def x=(value)
+      coordinates.x = value
+    end
+
+    def y=(value)
+      coordinates.y = value
+    end
+
+    def neighbour(direction)
+      new_x, new_y = *coordinates.at(direction).to_a
+      @neighbours.find { |c| c.x == new_x && c.y == new_y }
+    end
+
+    def see_through?
+      transparent
+    end
+
+    def on_step_in(creature)
+      @creature = creature
+    end
+
+    def on_step_out(creature)
+      @creature = nil
     end
 
     # @return [Array<Cell>] All adjacent cells that a creature can walk onto.
@@ -35,7 +83,7 @@ module Roguelike
 
     # @return [String] A string with the attributes of the cell
     def inspect
-      "#<Cell:#{object_id} @x=#{x}, @y=#{y}, @wall=#{wall}, @direction=#{direction.inspect}, @symbol=#{symbol.dump}>"
+      "#<Cell:#{object_id} #{(instance_variables - [:@neighbours]).map { |v| "#{v}=#{instance_variable_get(v).inspect}" }.join ', '}>"
     end
   end
 end

@@ -12,9 +12,9 @@ module Roguelike
 
     CELL_ATTRIBUTES = {
       wall: { symbol: '#', wall: true },
-      floor: { symbol: '.' },
-      starting_location: { symbol: 's', start: true },
-      door: { symbol: 'D' }
+      floor: { symbol: '.', transparent: true },
+      starting_location: { symbol: 's', start: true, transparent: true },
+      door: { symbol: 'D', transparent: true }
     }
 
     def initialize
@@ -51,12 +51,9 @@ module Roguelike
       @cells.each do |cell|
         next unless cell.wall
 
-        neighbours = [
-          lookup(cell.x + 1, cell.y),
-          lookup(cell.x - 1, cell.y),
-          lookup(cell.x, cell.y + 1),
-          lookup(cell.x, cell.y - 1)
-        ].compact
+        neighbours = [:up, :down, :left, :right].map do |direction|
+          lookup(*cell.coordinates.at(direction).to_a)
+        end.compact
 
         next unless neighbours.size == 3
 
@@ -64,14 +61,14 @@ module Roguelike
 
         gravities.each do |gravity|
           feature = Feature.new
-          center = cell.dup
+          center = cell.clone
           feature.add_cell center, -center.x
-          neighbours.each { |c| feature.add_cell c.dup, -c.x }
+          neighbours.each { |c| feature.add_cell c.clone, -c.x }
           feature.rotate gravity
 
-          cell_1 = feature.lookup(center.x + 1, center.y)
-          cell_2 = feature.lookup(center.x - 1, center.y)
-          cell_3 = feature.lookup(center.x, center.y + 1)
+          cell_1 = feature.lookup(*center.coordinates.at(:right))
+          cell_2 = feature.lookup(*center.coordinates.at(:left))
+          cell_3 = feature.lookup(*center.coordinates.at(:down))
 
           next unless cell_1 && cell_1.wall
           next unless cell_2 && cell_2.wall

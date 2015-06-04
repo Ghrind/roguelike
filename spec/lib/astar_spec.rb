@@ -1,10 +1,6 @@
 require 'spec_helper'
 
 RSpec.describe Roguelike::AStar do
-  def coordinates(cell)
-    [cell.y, cell.x]
-  end
-
   describe '#find_path' do
     context 'when there is a path' do
       it 'should prefer straight lines over zigzag' do
@@ -19,7 +15,7 @@ RSpec.describe Roguelike::AStar do
 
         astar = Roguelike::AStar.new
 
-        expect(astar.find_path(start, goal).map { |c| coordinates c }).to eq [[2, 1], [2, 2], [2, 3]]
+        expect(astar.find_path(start, goal).map { |c| coordinates c }).to eq [[1, 2], [2, 2], [3, 2]]
       end
 
       it 'should use diagonals when needed' do
@@ -46,7 +42,7 @@ RSpec.describe Roguelike::AStar do
 
         astar = Roguelike::AStar.new
 
-        expect(astar.find_path(start, goal).map { |c| coordinates c }).to eq [[1, 1], [1, 2], [1, 3]]
+        expect(astar.find_path(start, goal).map { |c| coordinates c }).to eq [[1, 1], [2, 1], [3, 1]]
       end
 
       it 'should avoid abstacles' do
@@ -61,7 +57,7 @@ RSpec.describe Roguelike::AStar do
 
         astar = Roguelike::AStar.new
 
-        expect(astar.find_path(start, goal).map { |c| coordinates c }).to eq [[1, 1], [1, 2], [1, 3], [2, 4], [3, 3], [3, 2], [3, 1]]
+        expect(astar.find_path(start, goal).map { |c| coordinates c }).to eq [[1, 1], [2, 1], [3, 1], [4, 2], [3, 3], [2, 3], [1, 3]]
       end
     end
     context 'when there is no path' do

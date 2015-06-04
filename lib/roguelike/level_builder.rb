@@ -32,6 +32,18 @@ module Roguelike
         '   #####   '
       ])
 
+      main_feature = Feature.new.build([
+        '###########',
+        '#.........#',
+        '#.........#',
+        '#...#.#...#',
+        '#....s....#',
+        '#...#..#..#',
+        '#.........#',
+        '#.........#',
+        '###########'
+      ])
+
       # Main loop
       @options[:iterations].times do
      
@@ -74,7 +86,6 @@ module Roguelike
 
       # Add exit in the last room
       end_cell = last_room.cells.find_all { |c| c.walkable? }.sample
-      @level.destination = end_cell
 
       @level.set_cells main_feature
 

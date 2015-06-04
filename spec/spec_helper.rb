@@ -7,6 +7,10 @@ end
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 require 'roguelike'
 
+def coordinates(cell)
+  [cell.x, cell.y]
+end
+
 def feature_from_map(map)
   feature = Roguelike::Feature.new
   feature.build map
