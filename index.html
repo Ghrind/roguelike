@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <canvas id="map" width="500" height="500"></canvas>
+    <table>
+      <tr>
+        <td><a href="#" onclick="move('up_left'); return false;">↖</a></td>
+        <td><a href="#" onclick="move('up'); return false;">↑</a></td>
+        <td><a href="#" onclick="move('up_right'); return false;">↗</a></td>
+      </tr>
+      <tr>
+        <td><a href="#" onclick="move('left'); return false;">←</a></td>
+        <td></td>
+        <td><a href="#" onclick="move('right'); return false;">→</a></td>
+      </tr>
+      <tr>
+        <td><a href="#" onclick="move('down_left'); return false;">↙</a></td>
+        <td><a href="#" onclick="move('down'); return false;">↓</a></td>
+        <td><a href="#" onclick="move('down_right'); return false;">↘</a></td>
+      </tr>
+    </table>
+
+    <script src="https://raw.githubusercontent.com/dcodeIO/ByteBuffer.js/master/dist/ByteBufferAB.min.js"></script>
+    <script src="https://raw.githubusercontent.com/dcodeIO/ProtoBuf.js/master/dist/ProtoBuf.min.js"></script>
+    <script type="text/javascript">
+      var ProtoBuf = dcodeIO.ProtoBuf;
+      var builder = ProtoBuf.loadProtoFile("roguelike.proto");
+      var GameMessage = builder.build('roguelike.GameMessage');
+
+      var GameClient = function(serverURI) {
+        this.serverURI = serverURI;
+        this.busy = false;
+        this.commandBuffer = [];
+
+        this.processCommands = function() {
+          if (this.commandBuffer.length == 0 || this.busy) {
+            setTimeout(this.processCommands, 50);
+            return;
+          };
+          if (this.socket.readyState == WebSocket.CLOSED) {
+            this.socket = this.createSocket();
+            setTimeout(this.processCommands, 50);
+            return;
+          };
+          if (this.socket.readyState != WebSocket.OPEN) {
+            setTimeout(this.processCommands, 50);
+            return;
+          };
+          this.busy = true;
+          var command = this.commandBuffer.shift();
+          this.socket.send(command);
+        }.bind(this);
+
+        this.createSocket = function() {
+          var socket = new WebSocket(this.serverURI);
+          socket.binaryType = "arraybuffer";
+          socket.onmessage = function (event) {
+            this.busy = false;
+            setTimeout(this.processCommands, 50);
+            var message = new GameMessage.decode(event.data);
+            this.draw(message);
+          }.bind(this);
+          return socket;
+        };
+
+        this.socket = this.createSocket();
+
+        this.start = function() {
+          setTimeout(this.processCommands, 50);
+          this.sendMessage('showme');
+        }.bind(this);
+
+        this.sendMessage = function(message) {
+          this.commandBuffer.push(message);
+        };
+
+        this.draw = function(message) {
+          var canvas = document.getElementById('map');
+          var context = canvas.getContext('2d');
+
+          // Clear canvas
+          context.clearRect(0, 0, canvas.width, canvas.height);
+
+          var cell_size = 7;
+
+          var width = Math.floor(canvas.width / cell_size);
+          var height = Math.floor(canvas.height / cell_size);
+
+          var center_x = Math.floor(width / 2);
+          var center_y = Math.floor(height / 2);
+
+          var min_x = center_x - width;
+          var min_y = center_y - height;
+
+          context.fillText(message.player.symbol, center_x * cell_size, center_y * cell_size);
+
+          //context.textAlign = 'center';
+
+          for(var i = 0; i < message.cells.length; i++) {
+            cell = message.cells[i];
+
+            var x = cell.x + center_x - message.player.x;
+            var y = cell.y + center_y - message.player.y;
+
+            if (x < min_x || x > width || y < min_y || y > height) {
+              continue;
+            }
+
+            context.fillText(cell.symbol, x * cell_size, y * cell_size);
+          };
+        };
+      };
+
+      var client = new GameClient('ws://localhost:9292');
+      client.start();
+
+
+      function move(direction) {
+        client.sendMessage('player.move_' + direction);
+      };
+
+      // event.type must be keypress
+      function getChar(event) {
+        if (event.which == null) {
+          return String.fromCharCode(event.keyCode) // IE
+        } else if (event.which!=0 && event.charCode!=0) {
+          return String.fromCharCode(event.which)   // the rest
+        } else {
+          return null // special key
+        }
+      }
+
+      document.onkeypress = function(event) {
+        var char = getChar(event || window.event);
+        if (!char) return // special key
+        switch(char) {
+          case '7':
+            move('up_left');
+            break;
+          case '8':
+            move('up');
+            break;
+          case '9':
+            move('up_right');
+            break;
+          case '4':
+            move('left');
+            break;
+          case '6':
+            move('right');
+            break;
+          case '1':
+            move('down_left');
+            break;
+          case '2':
+            move('down');
+            break;
+          case '3':
+            move('down_right');
+            break;
+        };
+        return false;
+      };
+
+    </script>
+  </body>
+</html>

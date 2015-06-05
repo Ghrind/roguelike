@@ -32,5 +32,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rspec'
   spec.add_development_dependency 'simplecov'
 
-  spec.add_runtime_dependency 'ncursesw'
+  #spec.add_runtime_dependency 'rack'
+  spec.add_runtime_dependency 'faye-websocket'
+  spec.add_runtime_dependency 'thin'
+  spec.add_runtime_dependency 'ruby_protobuf'
 end
