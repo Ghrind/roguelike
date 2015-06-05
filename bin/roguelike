@@ -1,8 +1,2 @@
-#!/usr/bin/env ruby
-
-require "bundler/setup"
-require 'roguelike'
-
-# The first and only argument may be a map name (from the data/maps directory)
-game = Roguelike::Game.new
-game.play ARGV.first
+#!/usr/bin/env bash
+bundle exec rackup -s thin -E production config.ru
