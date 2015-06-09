@@ -8,6 +8,8 @@ module Roguelike
     attr_accessor :neighbours
     attr_reader :creature
     attr_reader :coordinates
+    attr_reader :id
+    attr_accessor :changed
 
     ATTRIBUTES = {
       wall: false,       # Is the cell a boudary of an open space?
@@ -18,6 +20,10 @@ module Roguelike
     }
 
     attr_accessor *ATTRIBUTES.keys
+
+    def self.generate_id
+      @_id = (@_id || -1).next
+    end
 
     # @param x [Fixnum] The x position of the cell on the grid
     # @param y [Fixnum] The y position of the cell on the grid
@@ -31,6 +37,8 @@ module Roguelike
 
       @neighbours = []
       @creature = nil
+      @id = self.class.generate_id
+      @changed = true
     end
 
     def clone
@@ -65,9 +73,11 @@ module Roguelike
 
     def on_step_in(creature)
       @creature = creature
+      changed!
     end
 
     def on_step_out(creature)
+      changed! unless @creature.nil?
       @creature = nil
     end
 
@@ -84,6 +94,10 @@ module Roguelike
     # @return [String] A string with the attributes of the cell
     def inspect
       "#<Cell:#{object_id} #{(instance_variables - [:@neighbours]).map { |v| "#{v}=#{instance_variable_get(v).inspect}" }.join ', '}>"
+    end
+
+    def changed!
+      @changed = true
     end
   end
 end

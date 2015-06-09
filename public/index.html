@@ -2,9 +2,14 @@
 <html>
   <head>
     <meta charset="utf-8">
+    <style>
+      #map {
+        border: 1px solid black;
+      }
+    </style>
   </head>
   <body>
-    <canvas id="map" width="500" height="500"></canvas>
+    <canvas id="map"></canvas>
     <table>
       <tr>
         <td><a href="#" onclick="move('up_left'); return false;">↖</a></td>
@@ -23,8 +28,8 @@
       </tr>
     </table>
 
-    <script src="https://raw.githubusercontent.com/dcodeIO/ByteBuffer.js/master/dist/ByteBufferAB.min.js"></script>
-    <script src="https://raw.githubusercontent.com/dcodeIO/ProtoBuf.js/master/dist/ProtoBuf.min.js"></script>
+    <script src="ByteBufferAB.min.js"></script>
+    <script src="ProtoBuf.min.js"></script>
     <script type="text/javascript">
       var ProtoBuf = dcodeIO.ProtoBuf;
       var builder = ProtoBuf.loadProtoFile("roguelike.proto");
@@ -61,16 +66,40 @@
             this.busy = false;
             setTimeout(this.processCommands, 50);
             var message = new GameMessage.decode(event.data);
-            this.draw(message);
+
+            console.log('Received: ' + message.cells.length + ' cell(s)');
+            for (var i = 0; i < message.cells.length; i++) {
+              var cell = message.cells[i];
+              this.gameObjects['cells'][cell.id] = cell;
+            };
+            
+            if (message.player) {
+              this.gameObjects['player'] = message.player;
+            };
+
+            if (message.player || message.cells.length > 0) {
+              this.draw(message);
+            } else {
+              while (this.commandBuffer[0] == message.command) {
+                this.commandBuffer.shift();
+              }
+            };
+
+            //console.log(this.gameObjects['cells']);
+            //console.log(this.gameObjects['player']);
+
+            //console.log(message);
           }.bind(this);
           return socket;
         };
+
+        this.gameObjects = { cells: [], player: '' };
 
         this.socket = this.createSocket();
 
         this.start = function() {
           setTimeout(this.processCommands, 50);
-          this.sendMessage('showme');
+          this.sendMessage('system.init');
         }.bind(this);
 
         this.sendMessage = function(message) {
@@ -79,12 +108,18 @@
 
         this.draw = function(message) {
           var canvas = document.getElementById('map');
+          canvas.height = 500;
+          canvas.width = 500;
+
           var context = canvas.getContext('2d');
+
+          var player = this.gameObjects['player'];
+          var cells = this.gameObjects['cells'];
 
           // Clear canvas
           context.clearRect(0, 0, canvas.width, canvas.height);
 
-          var cell_size = 7;
+          var cell_size = 10;
 
           var width = Math.floor(canvas.width / cell_size);
           var height = Math.floor(canvas.height / cell_size);
@@ -95,19 +130,30 @@
           var min_x = center_x - width;
           var min_y = center_y - height;
 
-          context.fillText(message.player.symbol, center_x * cell_size, center_y * cell_size);
+          context.fillStyle = 'green';
+          context.fillText(player.symbol, center_x * cell_size, center_y * cell_size);
 
           //context.textAlign = 'center';
 
-          for(var i = 0; i < message.cells.length; i++) {
-            cell = message.cells[i];
+          for(var i = 0; i < cells.length; i++) {
+            cell = cells[i];
 
-            var x = cell.x + center_x - message.player.x;
-            var y = cell.y + center_y - message.player.y;
+            if (cell === undefined) {
+              continue;
+            };
+
+            var x = cell.x + center_x - player.x;
+            var y = cell.y + center_y - player.y;
 
             if (x < min_x || x > width || y < min_y || y > height) {
               continue;
             }
+
+            if (message.fov.indexOf(cell.id) != -1) {
+              context.fillStyle = 'green';
+            } else {
+              context.fillStyle = 'black';
+            };
 
             context.fillText(cell.symbol, x * cell_size, y * cell_size);
           };

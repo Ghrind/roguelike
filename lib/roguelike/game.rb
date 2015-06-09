@@ -3,29 +3,13 @@ require_relative 'creature'
 
 module Roguelike
   class Game
+    attr_reader :player, :level
+
     def initialize
       @player = Roguelike::Creature.new symbol: '@', light_radius: 5
       @level = LevelBuilder.new.generate
       start = @level.cells.find_all { |c| c.start }.sample
       @level.enter @player, start
-    end
-
-    def to_message
-      message = Roguelike::GameMessage.new
-      @level.cells.map do |cell|
-        msg = Roguelike::CellMessage.new
-        msg.x = cell.x
-        msg.y = cell.y
-        msg.symbol = cell.symbol
-        message.cells << msg
-      end
-      player_message = Roguelike::CreatureMessage.new
-      player_message.x = @player.x
-      player_message.y = @player.y
-      player_message.symbol = @player.symbol
-      message.player = player_message
-
-      message.serialize_to_string
     end
 
     def tick(command)
