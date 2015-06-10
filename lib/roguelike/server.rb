@@ -72,7 +72,11 @@ module Roguelike
 
     def game_command(command)
       game.tick(command)
+
+      # TODO Try to avoid calculating FOV if possible
       game.level.do_fov(game.player)
+      game.player.changed!
+
       cells = game.player.visited_cells.find_all { |c| c.changed }
       creatures = [game.player].find_all { |c| c.changed }
       {
@@ -91,7 +95,7 @@ module Roguelike
           msg.id = cell.id
           msg.x = cell.x
           msg.y = cell.y
-          msg.symbol = cell.symbol
+          msg.symbol = cell.current_symbol
           message.cells << msg
           cell.changed = false
         end

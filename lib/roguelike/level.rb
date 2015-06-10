@@ -49,6 +49,17 @@ module Roguelike
       true
     end
 
+    def creature_open_close(creature, direction)
+      _, destination = creature_movement(creature, direction)
+      if destination.closed?
+        destination.open!
+      elsif destination.open?
+        destination.close!
+      else
+        false
+      end
+    end
+
     def creature_can_move?(creature, direction)
       start, destination = creature_movement(creature, direction)
       destination_reachable? destination

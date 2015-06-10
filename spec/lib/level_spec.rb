@@ -31,6 +31,60 @@ RSpec.describe Roguelike::Level do
     level
   }
 
+  let :feature_3 do
+    feature_from_map [
+      '.D'
+    ]
+  end
+
+  let :level_3 do
+    level = Roguelike::Level.new
+    level.set_cells feature_3
+    level
+  end
+
+  describe '#creature_open_close' do
+    let :creature do
+      Roguelike::Creature.new
+    end
+    before do
+      @door = level_3.lookup 1, 0
+      level_3.enter creature, level_3.lookup(0, 0)
+    end
+    it 'should find the right cell depending on destination' do
+      expect(@door).to receive(:closed?).and_return false
+      level_3.creature_open_close creature, :right
+    end
+    context 'when the door is open' do
+      before do
+        @door.open = true
+      end
+      it 'should close it' do
+        expect(@door).to receive(:close!).and_return(:foobar)
+        expect(level_3.creature_open_close(creature, :right)).to eq :foobar
+      end
+    end
+    context 'when the door is closed' do
+      before do
+        @door.open = false
+      end
+      it 'should open it' do
+        expect(@door).to receive(:open!).and_return(:foobar)
+        expect(level_3.creature_open_close(creature, :right)).to eq :foobar
+      end
+    end
+    context 'when the cell is not a door' do
+      before do
+        @door.door = false
+      end
+      it 'should return false' do
+        expect(@door).not_to receive(:open!)
+        expect(@door).not_to receive(:close!)
+        expect(level_3.creature_open_close(creature, :right)).to eq false
+      end
+    end
+  end
+
   describe '#creature_movement' do
     before do
       @creature = Roguelike::Creature.new x: 1, y: 2

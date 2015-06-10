@@ -16,12 +16,14 @@ module Roguelike
       case command
       when 'player.wait'
       when /^player\.move_/
-        direction = command.sub('player.move_', '').to_sym
+        direction = get_direction('player.move', command)
         if @level.creature_can_move?(@player, direction)
           @level.move_creature(@player, direction)
         else
           # TODO Try another action on the cell
         end
+      when /^player.open_close/
+        @level.creature_open_close(@player, get_direction('player.open_close', command))
       else
         return
       end
@@ -38,6 +40,12 @@ module Roguelike
       #end
 
       true
+    end
+
+    private
+
+    def get_direction(command_type, command)
+      command.sub(command_type + '_', '').to_sym
     end
   end
 end

@@ -14,7 +14,7 @@ module Roguelike
       wall: { symbol: '#', wall: true },
       floor: { symbol: '.', transparent: true },
       starting_location: { symbol: 's', start: true, transparent: true },
-      door: { symbol: 'D', transparent: true }
+      door: { symbol: 'D', transparent: true, door: true, open: false }
     }
 
     def initialize

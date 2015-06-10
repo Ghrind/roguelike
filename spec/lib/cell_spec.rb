@@ -2,13 +2,31 @@ require 'spec_helper'
 
 RSpec.describe Roguelike::Cell do
   describe '#on_step_in' do
-    it 'should set the creature of the cell' do
+    let :cell do
       cell = Roguelike::Cell.new 0, 0
-      creature = Roguelike::Creature.new
-
+      cell.changed = false
+      cell
+    end
+    let :creature do
+      Roguelike::Creature.new
+    end
+    it 'should set the creature of the cell' do
       cell.on_step_in creature
-
       expect(cell.creature).to eq creature
+    end
+    context 'when cell is a closed door' do
+      before do
+        cell.door = true
+        cell.open = false
+      end
+      it 'should open it' do
+        cell.on_step_in creature
+        expect(cell.open).to eq true
+      end
+    end
+    it 'should marked the cell as changed' do
+      cell.on_step_in creature
+      expect(cell.changed).to eq true
     end
   end
 
@@ -60,14 +78,44 @@ RSpec.describe Roguelike::Cell do
   end
 
   describe '#see_through?' do
+    let :cell do
+      Roguelike::Cell.new nil, nil
+    end
+    context 'when cell is a door' do
+      before do
+        cell.door = true
+      end
+      context 'when the door is open' do
+        before do
+          cell.open = true
+        end
+        it 'should return true' do
+          expect(cell).to be_see_through
+        end
+      end
+      context 'when the door is closed' do
+        before do
+          cell.open = false
+        end
+        it 'should return false' do
+          expect(cell).not_to be_see_through
+        end
+      end
+    end
     context 'when the cell is transparent' do
+      before do
+        cell.transparent = true
+      end
       it 'should return true' do
-        expect(Roguelike::Cell.new(0, 0, transparent: true)).to be_see_through
+        expect(cell).to be_see_through
       end
     end
     context 'when the cell is not transparent' do
+      before do
+        cell.transparent = false
+      end
       it 'should return false' do
-        expect(Roguelike::Cell.new(0, 0, transparent: false)).not_to be_see_through
+        expect(cell).not_to be_see_through
       end
     end
   end
@@ -148,6 +196,106 @@ RSpec.describe Roguelike::Cell do
       expect(not_walkable_cell_2).to receive(:walkable?).and_return false
 
       expect(cell.walkable_neighbours).to eq [walkable_cell_1, walkable_cell_2]
+    end
+  end
+
+  describe '#open!' do
+    let :cell do
+      cell = Roguelike::Cell.new nil, nil
+      cell.changed = false
+      cell
+    end
+    context 'when cell is not a door' do
+      it 'should return false' do
+        expect(cell.open!).to eq false
+      end
+      it 'should not mark the door as changed' do
+        cell.open!
+        expect(cell.changed).to eq false
+      end
+    end
+    context 'when cell is a door' do
+      before do
+        cell.door = true
+      end
+      context 'when it is closed' do
+        before do
+          cell.open = false
+        end
+        it 'should open the door' do
+          cell.open!
+          expect(cell.open).to eq true
+        end
+        it 'should mark the door as changed' do
+          cell.open!
+          expect(cell.changed).to eq true
+        end
+        it 'should return true' do
+          expect(cell.open!).to eq true
+        end
+      end
+      context 'when it is open' do
+        before do
+          cell.open = true
+        end
+        it 'should return false' do
+          expect(cell.open!).to eq false
+        end
+        it 'should not mark the door as changed' do
+          cell.open!
+          expect(cell.changed).to eq false
+        end
+      end
+    end
+  end
+
+  describe '#close!' do
+    let :cell do
+      cell = Roguelike::Cell.new nil, nil
+      cell.changed = false
+      cell
+    end
+    context 'when cell is not a door' do
+      it 'should return false' do
+        expect(cell.close!).to eq false
+      end
+      it 'should not mark the door as changed' do
+        cell.close!
+        expect(cell.changed).to eq false
+      end
+    end
+    context 'when cell is a door' do
+      before do
+        cell.door = true
+      end
+      context 'when it is open' do
+        before do
+          cell.open = true
+        end
+        it 'should close the door' do
+          cell.close!
+          expect(cell.open).to eq false
+        end
+        it 'should mark the door as changed' do
+          cell.close!
+          expect(cell.changed).to eq true
+        end
+        it 'should return true' do
+          expect(cell.close!).to eq true
+        end
+      end
+      context 'when it is closed' do
+        before do
+          cell.open = false
+        end
+        it 'should return false' do
+          expect(cell.close!).to eq false
+        end
+        it 'should not mark the door as changed' do
+          cell.close!
+          expect(cell.changed).to eq false
+        end
+      end
     end
   end
 end

@@ -12,11 +12,14 @@ module Roguelike
     attr_accessor :changed
 
     ATTRIBUTES = {
-      wall: false,       # Is the cell a boudary of an open space?
-      direction: :none,  # An indication of where is the outside of the room from this cell
-      symbol: '?',       # How is the cell displayed on a map.
-      start: false,      # DEV Is this cell the starting location of the level
-      transparent: false # Can creatures see through this cell
+      wall: false,        # Is the cell a boudary of an open space?
+      direction: :none,   # An indication of where is the outside of the room from this cell
+      symbol: '?',        # How is the cell displayed on a map.
+      start: false,       # DEV Is this cell the starting location of the level
+      transparent: false, # Can creatures see through this cell
+      door: false,        # Does this cell behahe like a door
+      open: true,         # If this cell is a door, is it closed?
+      open_symbol: 'd'
     }
 
     attr_accessor *ATTRIBUTES.keys
@@ -39,6 +42,10 @@ module Roguelike
       @creature = nil
       @id = self.class.generate_id
       @changed = true
+    end
+
+    def current_symbol
+      open? ? open_symbol : symbol
     end
 
     def clone
@@ -68,11 +75,32 @@ module Roguelike
     end
 
     def see_through?
-      transparent
+      door ? open : transparent
     end
 
     def on_step_in(creature)
       @creature = creature
+      open! if closed?
+      changed!
+    end
+
+    def open?
+      door && open
+    end
+
+    def closed?
+      door && !open
+    end
+
+    def open!
+      return false unless closed?
+      self.open = true
+      changed!
+    end
+
+    def close!
+      return false unless open?
+      self.open = false
       changed!
     end
 

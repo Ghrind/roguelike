@@ -68,7 +68,9 @@
             setTimeout(this.processCommands, 50);
             var message = new GameMessage.decode(event.data);
 
-            console.log('Received: ' + message.cells.length + ' cell(s)');
+            //console.log('Received: ' + message.cells.length + ' cell(s)');
+            //console.log(message.fov);
+
             for (var i = 0; i < message.cells.length; i++) {
               var cell = message.cells[i];
               this.gameObjects['cells'][cell.id] = cell;
@@ -170,6 +172,10 @@
         client.sendMessage('player.move_' + direction);
       };
 
+      function openClose(direction) {
+        client.sendMessage('player.open_close_' + direction);
+      };
+
       // event.type must be keypress
       function getChar(event) {
         if (event.which == null) {
@@ -181,33 +187,48 @@
         }
       }
 
+      var currentAction = null;
       document.onkeypress = function(event) {
+        if (currentAction == null) {
+          currentAction = move;
+        }
         var char = getChar(event || window.event);
         if (!char) return // special key
         switch(char) {
+          case 'o':
+            currentAction = openClose;
+            break;
           case '7':
-            move('up_left');
+            currentAction('up_left');
+            currentAction = null;
             break;
           case '8':
-            move('up');
+            currentAction('up');
+            currentAction = null;
             break;
           case '9':
-            move('up_right');
+            currentAction('up_right');
+            currentAction = null;
             break;
           case '4':
-            move('left');
+            currentAction('left');
+            currentAction = null;
             break;
           case '6':
-            move('right');
+            currentAction('right');
+            currentAction = null;
             break;
           case '1':
-            move('down_left');
+            currentAction('down_left');
+            currentAction = null;
             break;
           case '2':
-            move('down');
+            currentAction('down');
+            currentAction = null;
             break;
           case '3':
-            move('down_right');
+            currentAction('down_right');
+            currentAction = null;
             break;
         };
         return false;
