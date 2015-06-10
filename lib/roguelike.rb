@@ -1,5 +1,5 @@
 require "roguelike/version"
-require "roguelike/application"
+require "roguelike/server"
 
 module Roguelike
   # Your code goes here...

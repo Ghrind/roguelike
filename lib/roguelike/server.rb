@@ -1,14 +1,46 @@
+require 'faye/websocket'
 require_relative 'game'
 require_relative 'roguelike.pb.rb'
 
 module Roguelike
-  class Application
+  class Server
     attr_reader :game, :root
 
     def initialize(root)
-      @game = Roguelike::Game.new
-      @game.level.do_fov(game.player)
       @root = Pathname.new(File.expand_path(root))
+    end
+
+    def application
+      lambda do |env|
+        if Faye::WebSocket.websocket?(env)
+          ws = Faye::WebSocket.new(env)
+
+          ws.on :message do |event|
+            time = Time.now
+            data = apply_command event.data
+            message = game_message event.data, data
+            ws.send(message.bytes)
+            elapsed_time = (Time.now - time) * 1000.0
+            # puts "Responded to '#{event.data}' in #{elapsed_time.ceil} milliseconds"
+          end
+
+          ws.on :close do |event|
+            # p [:close, event.code, event.reason]
+            ws = nil
+          end
+
+          # Return async Rack response
+          ws.rack_response
+        else
+          respond_http env
+        end
+      end
+    end
+
+    private
+
+    def start_new_game
+      @game = Roguelike::Game.new
     end
 
     def send(filename, content_type)
@@ -20,7 +52,7 @@ module Roguelike
     end
 
     def respond_http(env)
-      request_path = trim_path(env['REQUEST_PATH'])
+      request_path = trim_path(env['PATH_INFO'])
       case request_path
       when ''
         send 'index.html', 'text/html'
@@ -29,22 +61,13 @@ module Roguelike
       when 'ByteBufferAB.min.js', 'ProtoBuf.min.js'
         send request_path, 'application/javascript'
       else
-        puts "404 - Not found - '#{env['REQUEST_PATH']}'"
-        render_404 env['REQUEST_PATH']
+        #puts "404 - Not found - '#{env['PATH_INFO']}'"
+        render_404 env['PATH_INFO']
       end
     end
 
     def trim_path(path)
       path.to_s.sub(/^\//, '')
-    end
-
-    def apply_command(command)
-      case command
-      when 'system.init'
-        current_state
-      else
-        game_command command
-      end
     end
 
     def game_command(command)
@@ -58,17 +81,20 @@ module Roguelike
       }
     end
 
+    # FIXME Refactor
     def game_message(command, data)
       message = Roguelike::GameMessage.new
       message.command = command
-      data[:cells].map do |cell|
-        msg = Roguelike::CellMessage.new
-        msg.id = cell.id
-        msg.x = cell.x
-        msg.y = cell.y
-        msg.symbol = cell.symbol
-        message.cells << msg
-        cell.changed = false
+      if data[:cells]
+        data[:cells].map do |cell|
+          msg = Roguelike::CellMessage.new
+          msg.id = cell.id
+          msg.x = cell.x
+          msg.y = cell.y
+          msg.symbol = cell.symbol
+          message.cells << msg
+          cell.changed = false
+        end
       end
       player = data[:player]
       if player
@@ -87,6 +113,7 @@ module Roguelike
     end
 
     def current_state
+      game.level.do_fov(game.player)
       cells = game.player.visited_cells
       creatures = [game.player]
       {
@@ -95,30 +122,15 @@ module Roguelike
       }
     end
 
-    def server
-      lambda do |env|
-        if Faye::WebSocket.websocket?(env)
-          ws = Faye::WebSocket.new(env)
-
-          ws.on :message do |event|
-            time = Time.now
-            data = apply_command event.data
-            message = game_message event.data, data
-            ws.send(message.bytes)
-            elapsed_time = (Time.now - time) * 1000.0
-            puts "Responded to '#{event.data}' in #{elapsed_time.ceil} milliseconds"
-          end
-
-          ws.on :close do |event|
-            p [:close, event.code, event.reason]
-            ws = nil
-          end
-
-          # Return async Rack response
-          ws.rack_response
-        else
-          respond_http env
-        end
+    def apply_command(command)
+      case command
+      when 'game.new'
+        start_new_game
+        {}
+      when 'game.current_state'
+        current_state
+      else
+        game_command command
       end
     end
   end

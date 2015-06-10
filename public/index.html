@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <title>Untested Roguelike Client</title>
     <meta charset="utf-8">
     <style>
       #map {
@@ -99,7 +100,8 @@
 
         this.start = function() {
           setTimeout(this.processCommands, 50);
-          this.sendMessage('system.init');
+          this.sendMessage('game.new');
+          this.sendMessage('game.current_state');
         }.bind(this);
 
         this.sendMessage = function(message) {

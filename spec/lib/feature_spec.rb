@@ -187,7 +187,7 @@ RSpec.describe Roguelike::Feature do
   end
 
   describe '#min_y' do
-    it 'should find minimum x coordinate' do
+    it 'should find minimum y coordinate' do
       feature = Roguelike::Feature.new
       feature.add_cell Roguelike::Cell.new 0, 0
       feature.add_cell Roguelike::Cell.new 0, 10
@@ -209,7 +209,7 @@ RSpec.describe Roguelike::Feature do
   end
 
   describe '#max_y' do
-    it 'should find maximum x coordinate' do
+    it 'should find maximum y coordinate' do
       feature = Roguelike::Feature.new
       feature.add_cell Roguelike::Cell.new 0, 0
       feature.add_cell Roguelike::Cell.new 0, 10
