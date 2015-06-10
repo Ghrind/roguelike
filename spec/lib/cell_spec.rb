@@ -180,25 +180,6 @@ RSpec.describe Roguelike::Cell do
     end
   end
 
-  describe '#walkable_neighbours' do
-    it 'should return all neighbours that are walkable' do
-      cell = Roguelike::Cell.new nil, nil
-      walkable_cell_1 = Roguelike::Cell.new nil, nil
-      walkable_cell_2 = Roguelike::Cell.new nil, nil
-      not_walkable_cell_1 = Roguelike::Cell.new nil, nil
-      not_walkable_cell_2 = Roguelike::Cell.new nil, nil
-
-      cell.neighbours = [not_walkable_cell_1, walkable_cell_1, not_walkable_cell_2, walkable_cell_2]
-
-      expect(walkable_cell_1).to receive(:walkable?).and_return true
-      expect(walkable_cell_2).to receive(:walkable?).and_return true
-      expect(not_walkable_cell_1).to receive(:walkable?).and_return false
-      expect(not_walkable_cell_2).to receive(:walkable?).and_return false
-
-      expect(cell.walkable_neighbours).to eq [walkable_cell_1, walkable_cell_2]
-    end
-  end
-
   describe '#open!' do
     let :cell do
       cell = Roguelike::Cell.new nil, nil
@@ -282,6 +263,14 @@ RSpec.describe Roguelike::Cell do
         end
         it 'should return true' do
           expect(cell.close!).to eq true
+        end
+        context 'when there is a creature in the door' do
+          before do
+            cell.on_step_in Roguelike::Creature.new
+          end
+          it 'should return false' do
+            expect(cell.close!).to eq false
+          end
         end
       end
       context 'when it is closed' do

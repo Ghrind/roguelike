@@ -3,9 +3,9 @@ package roguelike;
 message GameMessage {
   required string command = 1;
   repeated CellMessage cells = 2;
-  //repeated CreatureMessage creatures = 2;
-  optional CreatureMessage player = 3;
-  repeated int32 fov = 4;
+  repeated CreatureMessage creatures = 3;
+  optional int32 player_id = 4;
+  repeated int32 fov = 5;
 }
 
 message CellMessage {
@@ -13,6 +13,7 @@ message CellMessage {
   required sint32 x = 2;
   required sint32 y = 3;
   required string symbol = 4;
+  optional int32 creature_id = 5;
 }
 
 message CreatureMessage {

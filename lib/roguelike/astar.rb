@@ -2,7 +2,7 @@ module Roguelike
   # An implementation of the A* algorithm.
   # Initially taken from http://branch14.org/snippets/a_star_in_ruby.html and fixed
   class AStar
-    def find_path(start, goal)
+    def find_path(start, goal, assume_goal_is_free = false)
       been_there = {}
       pqueue = PriorityQueue.new
       pqueue << [1, [start, [], 0]]
@@ -12,7 +12,7 @@ module Roguelike
         newpath = path_so_far + [spot]
         return newpath if (spot == goal)
         been_there[spot] = 1
-        adjacent_cells(spot).each do |newspot|
+        adjacent_cells(spot, assume_goal_is_free ? goal : nil).each do |newspot|
           next if been_there[newspot]
           tcost = cost(spot, newspot)
           next unless tcost
@@ -28,8 +28,8 @@ module Roguelike
 
     # @param cell [Cell] Any cell of the grid
     # @return [Array<Cell>] Every walkable cells adjacent to the given cell.
-    def adjacent_cells(cell)
-      cell.walkable_neighbours
+    def adjacent_cells(cell, goal)
+      cell.neighbours.select { |n| n == goal || n.walkable? }
     end
 
     # @param cell [Cell] The starting cell

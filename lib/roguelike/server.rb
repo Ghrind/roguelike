@@ -21,7 +21,7 @@ module Roguelike
             message = game_message event.data, data
             ws.send(message.bytes)
             elapsed_time = (Time.now - time) * 1000.0
-            # puts "Responded to '#{event.data}' in #{elapsed_time.ceil} milliseconds"
+            puts "Responded to '#{event.data}' in #{elapsed_time.ceil} milliseconds"
           end
 
           ws.on :close do |event|
@@ -78,10 +78,11 @@ module Roguelike
       game.player.changed!
 
       cells = game.player.visited_cells.find_all { |c| c.changed }
-      creatures = [game.player].find_all { |c| c.changed }
+      creatures = game.creatures.find_all { |c| c.changed }
       {
         cells: cells,
-        player: creatures.first
+        player: game.player, # TODO Don't send player it he didn't change
+        creatures: creatures
       }
     end
 
@@ -96,20 +97,25 @@ module Roguelike
           msg.x = cell.x
           msg.y = cell.y
           msg.symbol = cell.current_symbol
+          msg.creature_id = cell.creature.id if cell.creature
           message.cells << msg
           cell.changed = false
         end
       end
+      if data[:creatures]
+        data[:creatures].map do |creature|
+          msg = Roguelike::CreatureMessage.new
+          msg.id = creature.id
+          msg.x = creature.x
+          msg.y = creature.y
+          msg.symbol = creature.symbol
+          message.creatures << msg
+          creature.changed = false
+        end
+      end
       player = data[:player]
       if player
-        player.changed = false
-        player_message = Roguelike::CreatureMessage.new
-        player_message.id = player.id
-        player_message.x = player.x
-        player_message.y = player.y
-        player_message.symbol = player.symbol
-        message.player = player_message
-
+        message.player_id = player.id
         message.fov = player.fov.map { |c| c.id }
       end
 
@@ -122,7 +128,8 @@ module Roguelike
       creatures = [game.player]
       {
         cells: cells,
-        player: creatures.first
+        player: game.player,
+        creatures: game.creatures # TODO Show less creatures
       }
     end
 

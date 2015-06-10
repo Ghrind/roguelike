@@ -100,6 +100,7 @@ module Roguelike
 
     def close!
       return false unless open?
+      return false if creature
       self.open = false
       changed!
     end
@@ -109,14 +110,9 @@ module Roguelike
       @creature = nil
     end
 
-    # @return [Array<Cell>] All adjacent cells that a creature can walk onto.
-    def walkable_neighbours
-      @neighbours.select { |n| n.walkable? }
-    end
-
     # @return [Boolean] Can a creature walk onto the cell?
     def walkable?
-      !wall
+      !wall && creature.nil?
     end
 
     # @return [String] A string with the attributes of the cell

@@ -51,17 +51,13 @@ RSpec.describe Roguelike::Level do
       @door = level_3.lookup 1, 0
       level_3.enter creature, level_3.lookup(0, 0)
     end
-    it 'should find the right cell depending on destination' do
-      expect(@door).to receive(:closed?).and_return false
-      level_3.creature_open_close creature, :right
-    end
     context 'when the door is open' do
       before do
         @door.open = true
       end
       it 'should close it' do
         expect(@door).to receive(:close!).and_return(:foobar)
-        expect(level_3.creature_open_close(creature, :right)).to eq :foobar
+        expect(level_3.creature_open_close(creature, @door)).to eq :foobar
       end
     end
     context 'when the door is closed' do
@@ -70,7 +66,7 @@ RSpec.describe Roguelike::Level do
       end
       it 'should open it' do
         expect(@door).to receive(:open!).and_return(:foobar)
-        expect(level_3.creature_open_close(creature, :right)).to eq :foobar
+        expect(level_3.creature_open_close(creature, @door)).to eq :foobar
       end
     end
     context 'when the cell is not a door' do
@@ -80,20 +76,17 @@ RSpec.describe Roguelike::Level do
       it 'should return false' do
         expect(@door).not_to receive(:open!)
         expect(@door).not_to receive(:close!)
-        expect(level_3.creature_open_close(creature, :right)).to eq false
+        expect(level_3.creature_open_close(creature, @door)).to eq false
       end
     end
   end
 
-  describe '#creature_movement' do
+  describe '#creature_destination' do
     before do
       @creature = Roguelike::Creature.new x: 1, y: 2
     end
-    it 'should return start' do
-      expect(level_2.creature_movement(@creature, :up).first).to eq level_2.lookup(1, 2)
-    end
     it 'should return destination' do
-      expect(level_2.creature_movement(@creature, :up).last).to eq level_2.lookup(1, 1)
+      expect(level_2.creature_destination(@creature, :up)).to eq level_2.lookup(1, 1)
     end
   end
 
@@ -126,14 +119,14 @@ RSpec.describe Roguelike::Level do
       it 'should return true' do
         destination = level_2.lookup(1, 1)
         expect(level_2).to receive(:destination_reachable?).with(destination).and_return true
-        expect(level_2.creature_can_move?(@creature, :up)).to eq true
+        expect(level_2.creature_can_move?(@creature, destination)).to eq true
       end
     end
     context 'when the destination is not reachable' do
       it 'should return false' do
         destination = level_2.lookup(0, 2)
         expect(level_2).to receive(:destination_reachable?).with(destination).and_return false
-        expect(level_2.creature_can_move?(@creature, :left)).to eq false
+        expect(level_2.creature_can_move?(@creature, destination)).to eq false
       end
     end
   end
@@ -144,13 +137,14 @@ RSpec.describe Roguelike::Level do
     end
     it 'should make the creature step out of the start cell' do
       start = level_2.lookup 1, 2
+      destination = level_2.lookup 1, 1
       expect(@creature).to receive(:step_out).with(start)
-      level_2.move_creature @creature, :up
+      level_2.move_creature @creature, destination
     end
-    it 'should mage the creature step in the destination cell' do
+    it 'should make the creature step in the destination cell' do
       destination = level_2.lookup 1, 1
       expect(@creature).to receive(:step_in).with(destination)
-      level_2.move_creature @creature, :up
+      level_2.move_creature @creature, destination
     end
   end
 

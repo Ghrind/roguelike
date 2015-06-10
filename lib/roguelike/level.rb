@@ -42,33 +42,30 @@ module Roguelike
       assign_neighbours
     end
 
-    def move_creature(creature, direction)
-      start, destination = creature_movement(creature, direction)
+    def move_creature(creature, destination)
+      start = lookup(creature.x, creature.y)
       creature.step_out(start)
       creature.step_in(destination)
       true
     end
 
-    def creature_open_close(creature, direction)
-      _, destination = creature_movement(creature, direction)
-      if destination.closed?
-        destination.open!
-      elsif destination.open?
-        destination.close!
+    def creature_open_close(creature, target)
+      if target.closed?
+        target.open!
+      elsif target.open?
+        target.close!
       else
         false
       end
     end
 
-    def creature_can_move?(creature, direction)
-      start, destination = creature_movement(creature, direction)
+    def creature_can_move?(creature, destination)
       destination_reachable? destination
     end
 
-    def creature_movement(creature, direction)
+    def creature_destination(creature, direction)
       start = lookup(creature.x, creature.y)
-      destination = lookup(*start.coordinates.at(direction).to_a)
-      [start, destination]
+      lookup(*start.coordinates.at(direction).to_a)
     end
 
     def destination_reachable?(destination)
@@ -89,8 +86,8 @@ module Roguelike
       @grid = nil
     end
 
-    def get_path(start, destination)
-      astar.find_path start, destination
+    def get_path(start, destination, assume_goal_is_free = false)
+      astar.find_path start, destination, assume_goal_is_free
     end
 
     private
