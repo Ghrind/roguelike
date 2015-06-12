@@ -14,3 +14,12 @@
 # - Tier: Measure of how much the basic usage of this item is powerful (ie: a dagger versus a broad sword)
 # - Level: Minimum level to use the item, variable stats of the item scale on this
 # - Quality: How much special properies the item has and how they are distributed
+module Roguelike
+  class Item
+    attr_accessor :worth
+
+    def initialize(worth)
+      @worth = worth
+    end
+  end
+end

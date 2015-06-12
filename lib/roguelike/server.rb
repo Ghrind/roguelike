@@ -97,6 +97,7 @@ module Roguelike
           msg.x = cell.x
           msg.y = cell.y
           msg.symbol = cell.current_symbol
+          msg.item_worth = cell.item.worth if cell.item
           msg.creature_id = cell.creature.id if cell.creature
           message.cells << msg
           cell.changed = false

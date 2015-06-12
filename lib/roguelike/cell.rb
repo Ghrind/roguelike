@@ -6,7 +6,8 @@ module Roguelike
   # Every cell has pointer to its neighbours in order to ease the path finding.
   class Cell
     attr_accessor :neighbours
-    attr_reader :creature
+    attr_accessor :creature
+    attr_accessor :item
     attr_reader :coordinates
     attr_reader :id
     attr_accessor :changed
@@ -17,7 +18,7 @@ module Roguelike
       symbol: '?',        # How is the cell displayed on a map.
       start: false,       # DEV Is this cell the starting location of the level
       transparent: false, # Can creatures see through this cell
-      door: false,        # Does this cell behahe like a door
+      door: false,        # Does this cell behave like a door
       open: true,         # If this cell is a door, is it closed?
       open_symbol: 'd'
     }
@@ -42,6 +43,13 @@ module Roguelike
       @creature = nil
       @id = self.class.generate_id
       @changed = true
+    end
+
+    def remove_item(item)
+      return false unless @item == item
+      @item = nil
+      changed!
+      true
     end
 
     def current_symbol
