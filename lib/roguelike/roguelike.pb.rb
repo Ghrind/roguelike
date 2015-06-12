@@ -16,6 +16,7 @@
 #   required sint32 y = 3;
 #   required string symbol = 4;
 #   optional int32 creature_id = 5;
+#   optional int32 item_worth = 6;
 # }
 # 
 # message CreatureMessage {
@@ -46,6 +47,7 @@ module Roguelike
     required :sint32, :y, 3
     required :string, :symbol, 4
     optional :int32, :creature_id, 5
+    optional :int32, :item_worth, 6
   end
   class CreatureMessage < ::Protobuf::Message
     defined_in __FILE__

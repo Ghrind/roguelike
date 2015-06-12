@@ -165,7 +165,11 @@
               context.fillStyle = 'black';
             };
 
-            context.fillText(cell.symbol, x * cell_size, y * cell_size);
+            if (cell.item_worth) {
+              context.fillText(cell.item_worth, x * cell_size, y * cell_size);
+            } else {
+              context.fillText(cell.symbol, x * cell_size, y * cell_size);
+            };
 
             if (inSight && cell.creature_id) {
               var creature = this.gameObjects['creatures'][cell.creature_id];
@@ -179,6 +183,9 @@
       var client = new GameClient('ws://localhost:9292');
       client.start();
 
+      function get() {
+        client.sendMessage('player.pickup');
+      };
 
       function move(direction) {
         client.sendMessage('player.move_' + direction);
@@ -213,6 +220,10 @@
         switch(char) {
           case 'o':
             currentAction = openClose;
+            break;
+          case 'g':
+            get();
+            currentAction = null;
             break;
           case '7':
             currentAction('up_left');

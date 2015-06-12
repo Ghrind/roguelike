@@ -1,5 +1,9 @@
 require_relative 'level'
 require_relative 'creature'
+require_relative 'item'
+
+require 'logger'
+LOGGER = Logger.new('log/ai.log')
 
 module Roguelike
   class Game
@@ -7,16 +11,21 @@ module Roguelike
 
     def initialize
       @creatures = []
-      @player = Roguelike::Creature.new symbol: '@', light_radius: 5
+      @player = Roguelike::Creature.new symbol: '@', light_radius: 8, ai: Roguelike::WandererAI, threat_level: 5, max_hit_points: 10, hit_points: 10
       @creatures << @player
       @level = LevelBuilder.new.generate
       start = @level.cells.find_all { |c| c.start }.sample
       @level.enter @player, start
       10.times do
-        creature = Roguelike::Creature.new symbol: 'S', light_radius: 5
+        creature = Roguelike::Creature.new symbol: 'S', light_radius: 5, threat_level: rand(10).next, hit_points: 1, ai: Roguelike::WandererAI
         start = @level.cells.find_all { |c| c.walkable? }.sample
         @level.enter creature, start
         @creatures << creature
+      end
+      10.times do
+        item = Roguelike::Item.new rand(10).next
+        cell = @level.cells.find_all { |c| c.walkable? }.sample
+        cell.item = item
       end
     end
 
@@ -25,7 +34,8 @@ module Roguelike
     def player_action(command)
       case command
       when 'player.wait'
-        return true
+        player.ai.act(level)
+        # return true FIXME This was supposed to be the correct wait behavior
       when /^player\.move_/
         direction = get_direction('player.move', command)
         destination = @level.creature_destination(@player, direction)
@@ -36,11 +46,18 @@ module Roguelike
           # TODO Try another action on the cell
           return false
         end
-      when /^player.open_close/
+      when /^player.open_close_/
         direction = get_direction('player.open_close', command)
         target = @level.creature_destination(@player, direction)
         # TODO Ensure that target is reachable
         @level.creature_open_close(@player, target)
+      when 'player.pickup'
+        cell = @level.lookup(@player.x, @player.y)
+        if cell.item
+          return @player.pickup_from(cell)
+        else
+          return false
+        end
       else
         return false
       end
@@ -51,23 +68,19 @@ module Roguelike
     def tick(command)
       return unless player_action(command)
 
-      @creatures.each do |c|
-        # TODO Calculate FOV if player is in range
-        @level.do_fov(c)
-        dest = @level.lookup(@player.x, @player.y)
-        # TODO Use scent + decay to help creature chase the player.
-        if c.fov.include?(dest)
-          c.last_destination = dest
-          start = @level.lookup(c.x, c.y)
-          next if start == dest
-          path = level.get_path(start, dest, true)
-          if path
-            dest = level.lookup(path[1].x, path[1].y)
-            if level.creature_can_move?(c, dest)
-              level.move_creature c, dest
-            end
-          end
+      @creatures.each do |creature|
+        if creature.alive && creature.symbol != '@' # FIXME
+          LOGGER.debug "Creature##{creature.id} acts"
+          creature.ai.act(level)
         end
+      end
+
+      dead_creatures = creatures.find_all { |c| !c.alive }
+      dead_creatures.each do |creature|
+        creatures.delete creature
+        cell = level.lookup creature.x, creature.y
+        cell.creature = nil
+        cell.changed!
       end
 
       true
