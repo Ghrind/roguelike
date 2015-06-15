@@ -112,7 +112,7 @@ module Roguelike
         row.split(//).each_with_index do |symbol, x|
           attributes = CELL_ATTRIBUTES.values.find { |attrs| attrs[:symbol] == symbol }
           next unless attributes
-          add_cell Roguelike::Cell.new x, y, attributes
+          add_cell Roguelike::Cell.new attributes.merge(x: x, y: y)
         end
       end
       self
@@ -120,7 +120,7 @@ module Roguelike
 
     def make_cell(type)
       raise ArgumentError, "Unknown cell type: #{type.inspect}" unless CELL_ATTRIBUTES.has_key?(type)
-      Cell.new 0, 0, CELL_ATTRIBUTES[type]
+      Cell.new CELL_ATTRIBUTES[type]
     end
 
     def rotate(direction)
