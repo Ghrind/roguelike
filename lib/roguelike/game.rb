@@ -11,13 +11,17 @@ module Roguelike
 
     def initialize
       @creatures = []
-      @player = Roguelike::Creature.new symbol: '@', light_radius: 8, ai: Roguelike::WandererAI, threat_level: 5, max_hit_points: 10, hit_points: 10
+      @player = Roguelike::Creature.new symbol: '@', light_radius: 6, ai: Roguelike::WandererAI, threat_level: 5, max_hit_points: 10, hit_points: 10
       @creatures << @player
       @level = LevelBuilder.new.generate
       start = @level.cells.find_all { |c| c.start }.sample
       @level.enter @player, start
       10.times do
-        creature = Roguelike::Creature.new symbol: 'S', light_radius: 5, threat_level: rand(10).next, hit_points: 1, ai: Roguelike::WandererAI
+        if rand(10).next > 5
+          creature = Roguelike::Creature.new symbol: 'M', light_radius: 5, threat_level: 10, hit_points: 3, ai: Roguelike::WandererAI
+        else
+          creature = Roguelike::Creature.new symbol: 'm', light_radius: 5, threat_level: 2, hit_points: 3, ai: Roguelike::WandererAI
+        end
         start = @level.cells.find_all { |c| c.walkable? }.sample
         @level.enter creature, start
         @creatures << creature
@@ -34,8 +38,7 @@ module Roguelike
     def player_action(command)
       case command
       when 'player.wait'
-        player.ai.act(level)
-        # return true FIXME This was supposed to be the correct wait behavior
+        return true
       when /^player\.move_/
         direction = get_direction('player.move', command)
         destination = @level.creature_destination(@player, direction)
@@ -43,7 +46,10 @@ module Roguelike
           @level.move_creature(@player, destination)
           return true
         else
-          # TODO Try another action on the cell
+          if destination.creature
+            player.attack destination.creature
+            return true
+          end
           return false
         end
       when /^player.open_close_/
@@ -69,8 +75,9 @@ module Roguelike
       return unless player_action(command)
 
       @creatures.each do |creature|
-        if creature.alive && creature.symbol != '@' # FIXME
+        if creature.alive && creature != player
           LOGGER.debug "Creature##{creature.id} acts"
+          level.do_fov(creature)
           creature.ai.act(level)
         end
       end
@@ -82,6 +89,8 @@ module Roguelike
         cell.creature = nil
         cell.changed!
       end
+
+      level.do_fov(player)
 
       true
     end
