@@ -55,7 +55,7 @@ module Roguelike
       if @hit_points <= 0
         @alive = false
       end
-      LOGGER.debug "took #{amount} damage, now at #{@hit_points} (alive? #{alive})"
+      LOGGER.debug "#{id} took #{amount} damage, now at #{@hit_points} (alive? #{alive})"
       changed!
     end
 

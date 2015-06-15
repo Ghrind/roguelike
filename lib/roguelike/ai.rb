@@ -68,7 +68,7 @@ module Roguelike
 
       attacking: {
         strong_ennemies: [:retreating, 999],
-        damage_taken: [:retreating, :health_ratio], # TODO health ration
+        damage_taken: [:retreating, :health_ratio], # TODO health ratio
         null: [:wandering, 1]
       },
 
@@ -193,7 +193,7 @@ module Roguelike
         end
         true
       when :retreating
-        LOGGER.debug @ennemies.inspect
+        #LOGGER.debug @ennemies.inspect
         x = @ennemies.map { |e, _| e.x }.avg
         y = @ennemies.map { |e, _| e.y }.avg
         LOGGER.debug "Dead center is #{x}.#{y}"
@@ -212,8 +212,13 @@ module Roguelike
         if destination
           start = level.lookup(@self.x, @self.y)
           LOGGER.debug "Fleeing to #{destination.inspect}"
-          path = level.get_path(start, destination, true)
-          level.move_creature @self, path[1]
+          path = level.get_path(start, destination)
+          if path
+            level.move_creature @self, path[1]
+            return true
+          else
+            return false # Can't do anything
+          end
         else
           return false # Can't do anything
         end
@@ -221,7 +226,7 @@ module Roguelike
         true
       when :attacking
         start = level.lookup(@self.x, @self.y)
-        # FIXME I'm must chase the creature better
+        # FIXME I must chase the creature better
         target = @self.fov.map { |c| c.creature }.find { |c| c && c != @self && c.alive }
         unless target
           return false # Wait
