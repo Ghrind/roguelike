@@ -29,11 +29,9 @@ module Roguelike
       @_id = (@_id || -1).next
     end
 
-    # @param x [Fixnum] The x position of the cell on the grid
-    # @param y [Fixnum] The y position of the cell on the grid
     # @param wall [Boolean] Is the cell a wall?
-    def initialize(x, y, attributes = {})
-      @coordinates = Roguelike::Coordinates.new x, y
+    def initialize(attributes = {})
+      @coordinates = Roguelike::Coordinates.new attributes.delete(:x), attributes.delete(:y)
 
       ATTRIBUTES.merge(attributes).each_pair do |k, v|
         send "#{k}=", v

@@ -90,15 +90,15 @@ RSpec.describe Roguelike::Feature do
   describe '#to_map' do
     it 'should display the cells in the right direction' do
       feature = Roguelike::Feature.new
-      feature.add_cell Roguelike::Cell.new 0, 0
-      feature.add_cell Roguelike::Cell.new 0, 1
+      feature.add_cell Roguelike::Cell.new x: 0, y: 0
+      feature.add_cell Roguelike::Cell.new x: 0, y: 1
 
       expect(feature.to_map).to eq ['?', '?']
     end
 
     it 'should not mind having cells with negative coordinates' do
       feature = Roguelike::Feature.new
-      feature.add_cell Roguelike::Cell.new -1, -2
+      feature.add_cell Roguelike::Cell.new x: -1, y: -2
 
       expect(feature.to_map).to eq ['?']
     end
@@ -178,9 +178,9 @@ RSpec.describe Roguelike::Feature do
   describe '#min_x' do
     it 'should find minimum x coordinate' do
       feature = Roguelike::Feature.new
-      feature.add_cell Roguelike::Cell.new 0, 0
-      feature.add_cell Roguelike::Cell.new 10, 0
-      feature.add_cell Roguelike::Cell.new -7, 0
+      feature.add_cell Roguelike::Cell.new x: 0, y: 0
+      feature.add_cell Roguelike::Cell.new x: 10, y: 0
+      feature.add_cell Roguelike::Cell.new x: -7, y: 0
 
       expect(feature.min_x).to eq -7
     end
@@ -189,9 +189,9 @@ RSpec.describe Roguelike::Feature do
   describe '#min_y' do
     it 'should find minimum y coordinate' do
       feature = Roguelike::Feature.new
-      feature.add_cell Roguelike::Cell.new 0, 0
-      feature.add_cell Roguelike::Cell.new 0, 10
-      feature.add_cell Roguelike::Cell.new 0, -7
+      feature.add_cell Roguelike::Cell.new x: 0, y: 0
+      feature.add_cell Roguelike::Cell.new x: 0, y: 10
+      feature.add_cell Roguelike::Cell.new x: 0, y: -7
 
       expect(feature.min_y).to eq -7
     end
@@ -200,9 +200,9 @@ RSpec.describe Roguelike::Feature do
   describe '#max_x' do
     it 'should find maximum x coordinate' do
       feature = Roguelike::Feature.new
-      feature.add_cell Roguelike::Cell.new 0, 0
-      feature.add_cell Roguelike::Cell.new 10, 0
-      feature.add_cell Roguelike::Cell.new -7, 0
+      feature.add_cell Roguelike::Cell.new x: 0, y: 0
+      feature.add_cell Roguelike::Cell.new x: 10, y: 0
+      feature.add_cell Roguelike::Cell.new x: -7, y: 0
 
       expect(feature.max_x).to eq 10
     end
@@ -211,9 +211,9 @@ RSpec.describe Roguelike::Feature do
   describe '#max_y' do
     it 'should find maximum y coordinate' do
       feature = Roguelike::Feature.new
-      feature.add_cell Roguelike::Cell.new 0, 0
-      feature.add_cell Roguelike::Cell.new 0, 10
-      feature.add_cell Roguelike::Cell.new 0, -7
+      feature.add_cell Roguelike::Cell.new x: 0, y: 0
+      feature.add_cell Roguelike::Cell.new x: 0, y: 10
+      feature.add_cell Roguelike::Cell.new x: 0, y: -7
 
       expect(feature.max_y).to eq 10
     end
@@ -242,7 +242,7 @@ RSpec.describe Roguelike::Feature do
   describe '#lookup' do
     it 'should return cell at location' do
       feature = Roguelike::Feature.new
-      cell = Roguelike::Cell.new 7, 4
+      cell = Roguelike::Cell.new x: 7, y: 4
       feature.instance_variable_set :@grid, { 4 => { 7 => cell } }
 
       expect(feature.lookup(7, 4)).to eq cell
@@ -252,14 +252,14 @@ RSpec.describe Roguelike::Feature do
   describe '#add_cell' do
     it 'should put cell in the grid' do
       feature = Roguelike::Feature.new
-      cell = Roguelike::Cell.new 7, 4
+      cell = Roguelike::Cell.new x: 7, y: 4
       feature.add_cell cell
 
       expect(feature.lookup(7, 4)).to eq cell
     end
     it 'should add cell in the cells collection' do
       feature = Roguelike::Feature.new
-      cell = Roguelike::Cell.new 7, 4
+      cell = Roguelike::Cell.new x: 7, y: 4
       feature.add_cell cell
 
       expect(feature.cells).to eq [cell]
@@ -267,8 +267,8 @@ RSpec.describe Roguelike::Feature do
     context 'when replacing a cell' do
       it 'should not leave the previous cell' do
         feature = Roguelike::Feature.new
-        cell_1 = Roguelike::Cell.new 7, 4
-        cell_2 = Roguelike::Cell.new 7, 4
+        cell_1 = Roguelike::Cell.new x: 7, y: 4
+        cell_2 = Roguelike::Cell.new x: 7, y: 4
         feature.add_cell cell_1
         feature.add_cell cell_2
 
@@ -278,7 +278,7 @@ RSpec.describe Roguelike::Feature do
     context 'when coordinates are specified' do
       it 'should change cell coordinates' do
         feature = Roguelike::Feature.new
-        cell = Roguelike::Cell.new 7, 4
+        cell = Roguelike::Cell.new x: 7, y: 4
         feature.add_cell cell, 5, 10
 
         expect(cell.x).to eq 5
@@ -286,7 +286,7 @@ RSpec.describe Roguelike::Feature do
       end
       it 'should put it at the right place on the grid' do
         feature = Roguelike::Feature.new
-        cell = Roguelike::Cell.new 7, 4
+        cell = Roguelike::Cell.new x: 7, y: 4
         feature.add_cell cell, 5, 10
 
         expect(feature.lookup(5, 10)).to eq cell

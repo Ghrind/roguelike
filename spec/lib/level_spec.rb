@@ -151,7 +151,7 @@ RSpec.describe Roguelike::Level do
   describe '#blocked' do
     before do
       @level = Roguelike::Level.new
-      @cell = Roguelike::Cell.new 1, 5
+      @cell = Roguelike::Cell.new x: 1, y: 5
       expect(@level).to receive(:lookup).with(1, 5).and_return(@cell)
     end
     context 'when creatures can see through cell' do
@@ -266,7 +266,7 @@ RSpec.describe Roguelike::Level do
       @level.set_cells feature
     end
     it "should clear the creature's fov" do
-      cell = Roguelike::Cell.new 1000, 2000
+      cell = Roguelike::Cell.new x: 1000, y: 2000
       @creature.fov = [cell]
       @level.do_fov @creature
       expect(@creature.fov).not_to include(cell)

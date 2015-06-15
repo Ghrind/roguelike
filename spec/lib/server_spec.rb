@@ -54,7 +54,7 @@ describe Roguelike::Server do
       websocket_send(app, 'foobar')
     end
     it 'should return a GameMessage' do
-      expect(server).to receive(:apply_command).with('foobar').and_return({cells: [Roguelike::Cell.new(0, 0)]})
+      expect(server).to receive(:apply_command).with('foobar').and_return({cells: [Roguelike::Cell.new(x: 0, y: 0)]})
       message = Roguelike::GameMessage.new
       message.parse_from_string websocket_send(app, 'foobar')
       expect(message.cells.count).to eq 1

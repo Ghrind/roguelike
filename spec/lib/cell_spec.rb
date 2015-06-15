@@ -3,7 +3,7 @@ require 'spec_helper'
 RSpec.describe Roguelike::Cell do
   describe '#on_step_in' do
     let :cell do
-      cell = Roguelike::Cell.new 0, 0
+      cell = Roguelike::Cell.new
       cell.changed = false
       cell
     end
@@ -33,15 +33,15 @@ RSpec.describe Roguelike::Cell do
   describe '#neighbour' do
     context 'when there is a neighbour cell' do
       it 'should return neighbour cell' do
-        cell = Roguelike::Cell.new 0, 0
-        other_cell = Roguelike::Cell.new 0, -1
+        cell = Roguelike::Cell.new x: 0, y: 0
+        other_cell = Roguelike::Cell.new x: 0, y: -1
         cell.neighbours = [other_cell]
         expect(cell.neighbour(:up)).to eq other_cell
       end
     end
     context 'when there is no neighbour cell' do
       it 'should return nil' do
-        cell = Roguelike::Cell.new 0, 0
+        cell = Roguelike::Cell.new x: 0, y: 0
         expect(cell.neighbour(:up)).to be_nil
       end
     end
@@ -59,8 +59,8 @@ RSpec.describe Roguelike::Cell do
     
     directions.each_pair do |direction, c|
       it "should return the cell at the '#{direction}' position" do
-        cell = Roguelike::Cell.new 0, 0
-        cell.neighbours = directions.values.map { |c| Roguelike::Cell.new *c }
+        cell = Roguelike::Cell.new x: 0, y: 0
+        cell.neighbours = directions.values.map { |c| Roguelike::Cell.new Hash[[:x, :y].zip(c)] }
         expect(cell.neighbour(direction).coordinates.to_a).to eq c
       end
     end
@@ -68,7 +68,7 @@ RSpec.describe Roguelike::Cell do
 
   describe '#on_step_out' do
     it 'should reset the creature of the cell' do
-      cell = Roguelike::Cell.new 0, 0
+      cell = Roguelike::Cell.new
       creature = Roguelike::Creature.new
 
       cell.on_step_out creature
@@ -79,7 +79,7 @@ RSpec.describe Roguelike::Cell do
 
   describe '#see_through?' do
     let :cell do
-      Roguelike::Cell.new nil, nil
+      Roguelike::Cell.new
     end
     context 'when cell is a door' do
       before do
@@ -122,7 +122,7 @@ RSpec.describe Roguelike::Cell do
 
   describe '#inspect' do
     before do
-      @cell = Roguelike::Cell.new 0, 0, wall: true
+      @cell = Roguelike::Cell.new wall: true
     end
     it 'should show the object id' do
       expect(@cell.inspect).to include @cell.object_id.to_s
@@ -137,30 +137,30 @@ RSpec.describe Roguelike::Cell do
 
   describe '.new' do
     it 'should initialize the x attribute' do
-      cell = Roguelike::Cell.new 1, nil
+      cell = Roguelike::Cell.new x: 1
       expect(cell.x).to eq 1
     end
     it 'should initialize the y attribute' do
-      cell = Roguelike::Cell.new nil, 1
+      cell = Roguelike::Cell.new y: 1
       expect(cell.y).to eq 1
     end
     it 'should initialize the wall attribute' do
-      cell = Roguelike::Cell.new nil, nil, wall: true
+      cell = Roguelike::Cell.new wall: true
       expect(cell.wall).to eq true
     end
     it 'should initialize the direction attribute' do
-      cell = Roguelike::Cell.new nil, nil, direction: :left
+      cell = Roguelike::Cell.new direction: :left
       expect(cell.direction).to eq :left
     end
     it 'should initialize neighbours as an empty array' do
-      cell = Roguelike::Cell.new nil, nil
+      cell = Roguelike::Cell.new
       expect(cell.neighbours).to eq []
     end
   end
 
   describe '#walkable?' do
     before do
-      @cell = Roguelike::Cell.new nil, nil
+      @cell = Roguelike::Cell.new
     end
     context 'when the cell is a wall' do
       before do
@@ -182,7 +182,7 @@ RSpec.describe Roguelike::Cell do
 
   describe '#open!' do
     let :cell do
-      cell = Roguelike::Cell.new nil, nil
+      cell = Roguelike::Cell.new
       cell.changed = false
       cell
     end
@@ -232,7 +232,7 @@ RSpec.describe Roguelike::Cell do
 
   describe '#close!' do
     let :cell do
-      cell = Roguelike::Cell.new nil, nil
+      cell = Roguelike::Cell.new
       cell.changed = false
       cell
     end

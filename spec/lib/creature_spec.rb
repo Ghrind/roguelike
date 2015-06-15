@@ -3,7 +3,7 @@ require 'spec_helper'
 RSpec.describe Roguelike::Creature do
   describe '#step_in' do
     before do
-      @cell = Roguelike::Cell.new 1, 5
+      @cell = Roguelike::Cell.new x: 1, y: 5
       @creature = Roguelike::Creature.new
     end
     it 'should call cell.on_step_in with self' do
@@ -22,7 +22,7 @@ RSpec.describe Roguelike::Creature do
   end
   describe '#in_sight?' do
     before do
-      @cell = Roguelike::Cell.new 0, 0
+      @cell = Roguelike::Cell.new
       @creature = Roguelike::Creature.new
     end
     context "when the cell is in the creature's fov" do
@@ -39,7 +39,7 @@ RSpec.describe Roguelike::Creature do
   end
   describe '#step_out' do
     before do
-      @cell = Roguelike::Cell.new 1, 5
+      @cell = Roguelike::Cell.new
       @creature = Roguelike::Creature.new
       @creature.step_in @cell
     end
