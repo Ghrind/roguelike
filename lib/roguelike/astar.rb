@@ -28,19 +28,20 @@ module Roguelike
     # @param cell [Cell] Any cell of the grid
     # @return [Array<Cell>] Every walkable cells adjacent to the given cell.
     def adjacent_cells(cell, goal)
-      cell.neighbours.select { |n| n == goal || n.walkable? }
+      cell.neighbours.select { |n| n == goal || n.walkable_when_free? }
     end
 
     # @param cell [Cell] The starting cell
     # @param other [Cell] A neighbour of the cell
     # @return [Fixnum] The cost of going from a cell to another
     def cost(cell, other_cell)
+      c = 14
       # The diagonals cost more in order to avoid zigzaging
-      return 10 if cell.x > other_cell.x && cell.y == other_cell.y
-      return 10 if cell.x < other_cell.x && cell.y == other_cell.y
-      return 10 if cell.y > other_cell.y && cell.x == other_cell.x
-      return 10 if cell.y < other_cell.y && cell.x == other_cell.x
-      14
+      c = 10 if cell.x > other_cell.x && cell.y == other_cell.y
+      c = 10 if cell.x < other_cell.x && cell.y == other_cell.y
+      c = 10 if cell.y > other_cell.y && cell.x == other_cell.x
+      c = 10 if cell.y < other_cell.y && cell.x == other_cell.x
+      cell.creature ? c + 10 : c
     end
 
     # @param cell [Cell] The starting cell

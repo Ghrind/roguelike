@@ -73,8 +73,15 @@ module Roguelike
     def game_command(command)
       game.tick(command)
 
+      game_end = game.ended?
+      if game_end
+        puts "Player is dead..."
+        exit
+      end
+
       game.player.changed!
 
+      #cells = game.level.cells.find_all { |c| c.changed }
       cells = game.player.visited_cells.find_all { |c| c.changed }
       creatures = game.creatures.find_all { |c| c.changed }
       {
@@ -105,8 +112,8 @@ module Roguelike
         data[:creatures].map do |creature|
           msg = Roguelike::CreatureMessage.new
           msg.id = creature.id
-          msg.x = creature.x
-          msg.y = creature.y
+          msg.x = creature.cell.x
+          msg.y = creature.cell.y
           msg.symbol = creature.symbol
           message.creatures << msg
           creature.changed = false
@@ -123,8 +130,8 @@ module Roguelike
 
     def current_state
       game.level.do_fov(game.player)
+      #cells = game.level.cells
       cells = game.player.visited_cells
-      creatures = [game.player]
       {
         cells: cells,
         player: game.player,

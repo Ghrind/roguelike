@@ -23,6 +23,7 @@ module Roguelike
 
     def enter(creature, start_cell)
       creature.step_in(start_cell)
+      do_fov creature
     end
 
     def blocked?(x, y)
@@ -31,8 +32,7 @@ module Roguelike
 
     def light(creature, x, y)
       cell = lookup(x, y)
-      creature.fov << cell
-      creature.visit cell
+      creature.see cell
     end
 
     def set_cells(feature)
@@ -43,8 +43,7 @@ module Roguelike
     end
 
     def move_creature(creature, destination)
-      start = lookup(creature.x, creature.y)
-      creature.step_out(start)
+      creature.step_out(creature.cell)
       creature.step_in(destination)
       true
     end
@@ -64,7 +63,7 @@ module Roguelike
     end
 
     def creature_destination(creature, direction)
-      start = lookup(creature.x, creature.y)
+      start = creature.cell
       lookup(*start.coordinates.at(direction).to_a)
     end
 

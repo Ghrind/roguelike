@@ -16,10 +16,29 @@
 # - Quality: How much special properies the item has and how they are distributed
 module Roguelike
   class Item
-    attr_accessor :worth
+    attr_reader :id
 
-    def initialize(worth)
-      @worth = worth
+    def self.generate_id
+      @_id = (@_id || -1).next
+    end
+
+    ATTRIBUTES = {
+      worth: 1
+    }
+
+    attr_accessor *ATTRIBUTES.keys
+
+    attr_accessor :cell
+
+    def initialize(attributes = {})
+      ATTRIBUTES.merge(attributes).each_pair do |k, v|
+        send "#{k}=", v
+      end
+      @id = self.class.generate_id
+    end
+
+    def clone
+      self.class.new cell: self.cell.clone, worth: self.worth # FIXME Code me better
     end
   end
 end
