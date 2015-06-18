@@ -13,8 +13,8 @@ module ShadowcastingFieldOfView
   # start_x, start_y: center of view
   # radius: how far field of view extends
   def do_fov(creature)
-    creature.fov = []
-    light creature, creature.x, creature.y
+    creature.clear_fov
+    light creature, creature.cell.x, creature.cell.y
     8.times do |oct|
       cast_light creature, 1, 1.0, 0.0,
         @@mult[0][oct],@@mult[1][oct],
@@ -26,8 +26,8 @@ module ShadowcastingFieldOfView
   # Recursive light-casting function
   def cast_light(creature, row, light_start, light_end, xx, xy, yx, yy, id)
     radius = creature.light_radius
-    cx = creature.x
-    cy = creature.y
+    cx = creature.cell.x
+    cy = creature.cell.y
 
     return if light_start < light_end
     radius_sq = radius * radius

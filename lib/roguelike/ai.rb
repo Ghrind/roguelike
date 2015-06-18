@@ -20,12 +20,12 @@
 # The wanderer walks through the dungeon to pick up valuable items.
 # They are careful and will not fight to death or if the ennemy is too powerful.
 #
-# State:      obs.   Action:         input-wE          input-sE       input-I            input-D               NULL
-#                                                              
-# WANDERING    A     explore         ATTACKING:et      RETREATING:1   PICKING UP:iw      ATTACKING:2
-# ATTACKING    C     attack-ennemy                     RETREATING:1                      RETREATING:dt/maxhp   WANDERING:1
-# PICKING UP   A     pickup-item     ATTACKING:iw/et   RETREATING:1   PICKING UP:iw      ATTACKING:1           WANDERING:1
-# RETREATING   C     flee                                             PICKING UP:et/iw                         WANDERING:1
+# State:      obs.   Action:         input-wE       input-sE       input-I            input-D               NULL
+#                                                           
+# WANDERING    A     explore         ATTACKING:1    RETREATING:1   PICKING UP:1      ATTACKING:1
+# ATTACKING    C     attack-ennemy                  RETREATING:1                     RETREATING:dt/maxhp   WANDERING:1
+# PICKING UP   A     pickup-item     ATTACKING:ni   RETREATING:1   PICKING UP:1      ATTACKING:1           WANDERING:1
+# RETREATING   C     flee                                          PICKING UP:nt                           WANDERING:1
 #
 # input-wE: Weaker ennemies detected
 # input-sE: Stronger ennemies detected
@@ -37,6 +37,7 @@
 # hp: max hit points
 # iw: Item worth
 # et: Ennemies threat
+# ni: no more items
 class Array
   def sum
     inject(0) { |sum, value| sum += value }
@@ -52,36 +53,35 @@ module Roguelike
   class WandererAI
 
     OBSERVATIONS = {
-      wandering: [:weak_ennemies, :strong_ennemies, :valuable_item, :damage_taken],
-      attacking: [:strong_ennemies, :damage_taken],
-      picking_up: [:weak_ennemies, :strong_ennemies, :valuable_item, :damage_taken],
-      retreating: [:strong_ennemies, :weak_ennemies]
+      wandering: :all,
+      attacking: :ennemies,
+      picking_up: :all,
+      retreating: :ennemies
     }
 
     STATES = {
       wandering: {
-        weak_ennemies: [:attacking, :ennemies_threat],
-        strong_ennemies: [:retreating, 999],
-        valuable_item: [:picking_up, :item_worth],
-        damage_taken: [:attacking, 998]
+        weak_ennemies: [:attacking, 1],
+        strong_ennemies: [:retreating, 1],
+        valuable_item: [:picking_up, 1],
+        damage_taken: [:attacking, 1]
       },
 
       attacking: {
-        strong_ennemies: [:retreating, 999],
-        damage_taken: [:retreating, :health_ratio], # TODO health ratio
+        strong_ennemies: [:retreating, 1],
+        damage_taken: [:retreating, :health_ratio],
         null: [:wandering, 1]
       },
 
       retreating: {
-        #valuable_item: [:picking_up, 1], # TODO Make the wanderer choose if item is worth picking up (versus continue retreat)
+        valuable_item: [:picking_up, :no_more_threat],
         null: [:wandering, 1]
       },
 
       picking_up: {
-        weak_ennemies: [:attacking, :ennemies_threat],
-        strong_ennemies: [:retreating, 999],
-        valuable_item: [:picking_up, :item_worth],
-        damage_taken: [:attacking, 998],
+        weak_ennemies: [:attacking, :no_more_items],
+        strong_ennemies: [:retreating, 1],
+        damage_taken: [:attacking, 1],
         null: [:wandering, 1]
       }
     }
@@ -91,72 +91,107 @@ module Roguelike
     def initialize(creature)
       @self = creature
       @ennemies = {}
-      @last_hit_points = @self.hit_points
+      @items = []
 
       @current_state = :wandering
-
-      @ennemies_threat = 0
-      @item_worth = 0
     end
 
-    def observe
-      inputs_to_check = OBSERVATIONS[@current_state]
-      inputs = []
-      if inputs_to_check.include?(:strong_ennemies) || inputs_to_check.include?(:weak_ennemies)
-        @ennemies_threat = assess_ennemies_threat
-        LOGGER.debug "Ennemy threats: #{@ennemies.values.inspect}"
-        if @ennemies_threat >= assess_self_threat
-          inputs << :strong_ennemies
-        elsif @ennemies_threat > 0
-          inputs << :weak_ennemies
-        end
-        # TODO When to decrement ennemies threat?
-      end
-
-      if inputs_to_check.include?(:damage_taken)
-        if @last_hit_points > @self.hit_points
-          inputs << :damage_taken# = @self.hit_points.to_f / @self.max_hit_points
-        end
-      end
-
-      if inputs_to_check.include?(:valuable_item)
-        @item_location, @item_worth = assess_most_valuable_item
-        if @item_worth > 0
-          inputs << :valuable_item
-        end
-      end
-
-      inputs << :null if inputs.empty?
-
-      inputs
+    def on_damage_taken(amount)
+      receive_input :damage_taken
     end
 
-    def update_state
-      inputs = observe
-      LOGGER.debug "Current inputs: #{inputs}"
-      state_priority = 0
-      new_state = nil
-      inputs.each do |input|
-        state, priority = STATES[@current_state][input]
-        next unless state
-        priority = send(priority) if priority.is_a? Symbol
-        LOGGER.debug "  #{state}: #{priority}"
-        if priority > state_priority
-          state_priority = priority
-          new_state = state
+    def no_more_threat
+      current_ennemy_threat < assess_self_threat ? 1 : 0
+    end
+
+    def no_more_items
+      @items.empty? ? 1 : 0
+    end
+
+    def on_see_cell(cell)
+      if cell.creature
+        on_see_creature cell.creature
+      end
+      if cell.item
+        on_see_item cell.item
+      end
+    end
+
+    def on_see_item(item)
+      worth = assess_item_worth(item)
+      # FIXME Don't use hard coded value
+      if worth > 4
+        @items << item.clone unless @items.include?(item)
+        receive_input :valuable_item
+      end
+    end
+
+    def on_item_picked_up(item)
+      @items.delete_if { |i| i.id == item.id }
+    end
+
+    def on_see_creature(creature)
+      return if creature == @self || creature.faction == @self.faction # FIXME Move in another method
+      @ennemies[creature] = assess_ennemy_threat(creature)
+      current_threat = current_ennemy_threat - assess_self_threat
+
+      if current_threat >= 0
+        receive_input :strong_ennemies
+      else
+        receive_input :weak_ennemies
+      end
+    end
+
+    def health_ratio
+      (@self.max_hit_points - @self.hit_points).to_f / @self.max_hit_points
+    end
+
+    def receive_input(input)
+      new_state, chance = STATES[@current_state][input]
+      return if chance.nil?
+      # TODO Check chance
+      if chance.is_a?(Symbol)
+        chance = self.send chance
+      end
+      if rand <= chance
+        LOGGER.debug "Received #{input} while in #{@current_state}, changing state to #{new_state} (chance: #{chance})"
+        @current_state = new_state
+      else
+        LOGGER.debug "Received #{input} while in #{@current_state}, but ignored (#{new_state} chance: #{chance})"
+      end
+    end
+
+    def update_state(level)
+      decrease_ennemy_threat
+
+      case OBSERVATIONS[@current_state]
+      when :ennemies
+        if current_ennemy_threat == 0
+          receive_input :null
+        end
+      when :all
+        @items.delete_if do |item|
+          cell = level.lookup(item.cell.x, item.cell.y)
+          @self.fov.include?(cell) && cell.item.nil?
+        end
+        if current_ennemy_threat == 0 && @items.empty?
+          receive_input :null
         end
       end
-      LOGGER.debug "New state: #{new_state} (#{state_priority})"
-      @current_state = new_state if new_state
-      LOGGER.debug @current_state
+    end
+
+    def on_creature_dies(cell)
+      @ennemies.delete cell.creature
     end
 
     def act(level)
-      update_state
+      update_state level
+
+      LOGGER.debug @current_state
       case @current_state
       when :wandering
         # Try to explore an unknow cell
-        start = level.lookup(@self.x, @self.y)
+        start = @self.cell
         path = nil
         if @self.visited_cells.include?(@destination)
           @destination = nil
@@ -168,35 +203,54 @@ module Roguelike
         if @destination.nil? || path.nil?
           (@self.visited_cells.length - 1).downto(0) do |i|
             cell = @self.visited_cells[i]
+            next if cell.wall
             @destination = cell.neighbours.find { |n| !@self.visited_cells.include?(n) }
             break if @destination
           end
-          path = level.get_path(start, @destination, true)
-          LOGGER.debug "New random destination is #{@destination.inspect}"
+          if @destination
+            path = level.get_path(start, @destination, true)
+          else
+            move_at_random level
+          end
+          #LOGGER.debug "New random destination is #{@destination.inspect}"
+        end
+
+        if path
+          LOGGER.debug "Found a path in #{path.length} steps"
         end
 
         # FIXME I crash when I have nothing more to explore
-        if path
+        if path && path[1].walkable?
           level.move_creature @self, path[1]
         else
-          LOGGER.debug "Can't find a way to #{@destination.inspect}"
-          return false
+          return move_at_random level
         end
         true
       when :picking_up
-        start = level.lookup(@self.x, @self.y)
-        if start == @item_location
-          @self.pickup_from(@item_location)
+        start = @self.cell
+        item = @items.first # TODO Pick the closest item / item in sight, otherwise creature may ignore close items in order to pick the first it ever saw
+        destination = level.lookup(item.cell.x, item.cell.y) # Don't go to cell because it has been cloned
+        if start == destination
+          @self.pickup_from destination
         else
-          path = level.get_path(start, @item_location, true)
-          level.move_creature @self, path[1]
+          path = level.get_path(start, destination, true)
+
+          if path
+            LOGGER.debug "Found a path in #{path.length} steps"
+          end
+
+          if path && path[1].walkable?
+            level.move_creature @self, path[1]
+          else
+            return move_at_random level
+          end
         end
         true
       when :retreating
         #LOGGER.debug @ennemies.inspect
-        x = @ennemies.map { |e, _| e.x }.avg
-        y = @ennemies.map { |e, _| e.y }.avg
-        LOGGER.debug "Dead center is #{x}.#{y}"
+        x = @ennemies.map { |e, _| e.cell.x }.avg
+        y = @ennemies.map { |e, _| e.cell.y }.avg
+        #LOGGER.debug "Dead center is #{x}.#{y}"
 
         destination = nil
         distance = 0
@@ -210,53 +264,54 @@ module Roguelike
         end
 
         if destination
-          start = level.lookup(@self.x, @self.y)
-          LOGGER.debug "Fleeing to #{destination.inspect}"
+          start = @self.cell
+          #LOGGER.debug "Fleeing to #{destination.inspect}"
           path = level.get_path(start, destination)
+
           if path
+            LOGGER.debug "Found a path in #{path.length} steps"
+          end
+
+          if path && path[1].walkable?
             level.move_creature @self, path[1]
             return true
           else
-            return false # Can't do anything
+            return move_at_random level
           end
         else
-          return false # Can't do anything
+          return move_at_random level
         end
 
         true
       when :attacking
-        start = level.lookup(@self.x, @self.y)
+        start = @self.cell
         # FIXME I must chase the creature better
-        target = @self.fov.map { |c| c.creature }.find { |c| c && c != @self && c.alive }
+        # FIXME Choose a better target
+        target = @self.fov.map { |c| c.creature }.find { |c| c && c != @self && c.alive && c.faction != @self.faction }
         unless target
           return false # Wait
         end
-        LOGGER.debug "New target: #{target.id} #{target.x} #{target.y}"
-        destination = level.lookup(target.x, target.y)
+        #LOGGER.debug "New target: #{target.id} #{target.x} #{target.y}"
+        destination = target.cell
         if start.neighbours.include?(destination)
-          LOGGER.debug "Hit #{target}"
+          #LOGGER.debug "Hit #{target}"
           @self.attack(target)
         else
-          LOGGER.debug "Move closer to #{target}"
+          #LOGGER.debug "Move closer to #{target}"
           path = level.get_path(start, destination, true)
-          level.move_creature @self, path[1]
+
+          if path
+            LOGGER.debug "Found a path in #{path.length} steps"
+          end
+
+          if path && path[1].walkable?
+            level.move_creature @self, path[1]
+          else
+            return move_at_random level
+          end
         end
         true
       end
-    end
-
-    def assess_most_valuable_item
-      item_location = nil
-      worth = 0
-      @self.fov.each do |cell|
-        next unless cell.item
-        item_worth = assess_item_worth(cell.item)
-        if item_worth > worth
-          item_location = cell
-          worth = item_worth
-        end
-      end
-      [item_location, worth]
     end
 
     def assess_item_worth(item)
@@ -267,16 +322,22 @@ module Roguelike
       @self.threat_level
     end
 
-    def assess_ennemies_threat
+    def decrease_ennemy_threat
       @ennemies.keys.each do |ennemy|
         @ennemies[ennemy] = @ennemies[ennemy] - 1
         @ennemies.delete(ennemy) if @ennemies[ennemy] == 0
       end
-      @self.fov.each do |cell|
-        next if cell.creature.nil? || cell.creature == @self
-        @ennemies[cell.creature] = assess_ennemy_threat(cell.creature)
-      end
+    end
+
+    def current_ennemy_threat
       @ennemies.values.sum
+    end
+
+    def move_at_random(level)
+      target = @self.cell.neighbours.find_all { |c| c.walkable? }.sample
+      return false unless target
+      level.move_creature @self, target
+      true
     end
 
     def assess_ennemy_threat(creature)

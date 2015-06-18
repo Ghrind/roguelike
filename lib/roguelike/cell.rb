@@ -41,10 +41,20 @@ module Roguelike
       @creature = nil
       @id = self.class.generate_id
       @changed = true
+      @listeners = []
+    end
+
+    def add_listener(entity)
+      @listeners << entity unless @listeners.include?(entity)
+    end
+
+    def remove_listener(entity)
+      @listeners.delete(entity)
     end
 
     def remove_item(item)
       return false unless @item == item
+      broadcast :item_picked_up
       @item = nil
       changed!
       true
@@ -56,7 +66,7 @@ module Roguelike
 
     def clone
       attributes = Hash[ATTRIBUTES.keys.map { |k| [k, send(k)] }]
-      self.class.new x, y, attributes
+      self.class.new attributes.merge(x: x, y: y)
     end
 
     def x
@@ -84,9 +94,20 @@ module Roguelike
       door ? open : transparent
     end
 
+    def broadcast(event)
+      @listeners.each { |l| l.on_event event, self }
+    end
+
     def on_step_in(creature)
       @creature = creature
       open! if closed?
+      broadcast :creature_in
+      changed!
+    end
+
+    def on_creature_dies
+      broadcast :creature_dies
+      self.creature = nil
       changed!
     end
 
@@ -118,7 +139,11 @@ module Roguelike
 
     # @return [Boolean] Can a creature walk onto the cell?
     def walkable?
-      !wall && creature.nil?
+      walkable_when_free? && creature.nil?
+    end
+
+    def walkable_when_free?
+      !wall
     end
 
     # @return [String] A string with the attributes of the cell

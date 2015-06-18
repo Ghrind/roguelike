@@ -11,24 +11,25 @@ module Roguelike
 
     def initialize
       @creatures = []
-      @player = Roguelike::Creature.new symbol: '@', light_radius: 6, ai: Roguelike::WandererAI, threat_level: 5, max_hit_points: 10, hit_points: 10
+      @player = Roguelike::Creature.new symbol: '@', light_radius: 6, ai: Roguelike::WandererAI, threat_level: 5, max_hit_points: 999, hit_points: 999, faction: 1
       @creatures << @player
       @level = LevelBuilder.new.generate
       start = @level.cells.find_all { |c| c.start }.sample
       @level.enter @player, start
       10.times do
         if rand(10).next > 5
-          creature = Roguelike::Creature.new symbol: 'M', light_radius: 5, threat_level: 10, hit_points: 3, ai: Roguelike::WandererAI
+          creature = Roguelike::Creature.new symbol: 'M', light_radius: 5, threat_level: 10, hit_points: 3, ai: Roguelike::WandererAI, faction: 2
         else
-          creature = Roguelike::Creature.new symbol: 'm', light_radius: 5, threat_level: 2, hit_points: 3, ai: Roguelike::WandererAI
+          creature = Roguelike::Creature.new symbol: 'm', light_radius: 5, threat_level: 2, hit_points: 3, ai: Roguelike::WandererAI, faction: 2
         end
         start = @level.cells.find_all { |c| c.walkable? }.sample
         @level.enter creature, start
         @creatures << creature
       end
       10.times do
-        item = Roguelike::Item.new rand(10).next
+        item = Roguelike::Item.new worth: rand(10).next
         cell = @level.cells.find_all { |c| c.walkable? }.sample
+        item.cell = cell
         cell.item = item
       end
     end
@@ -38,7 +39,8 @@ module Roguelike
     def player_action(command)
       case command
       when 'player.wait'
-        return true
+        return player.ai.act(level)
+        #return true
       when /^player\.move_/
         direction = get_direction('player.move', command)
         destination = @level.creature_destination(@player, direction)
@@ -58,9 +60,9 @@ module Roguelike
         # TODO Ensure that target is reachable
         @level.creature_open_close(@player, target)
       when 'player.pickup'
-        cell = @level.lookup(@player.x, @player.y)
-        if cell.item
-          return @player.pickup_from(cell)
+        start = @player.cell
+        if start.item
+          return @player.pickup_from(start)
         else
           return false
         end
@@ -77,22 +79,19 @@ module Roguelike
       @creatures.each do |creature|
         if creature.alive && creature != player
           LOGGER.debug "Creature##{creature.id} acts"
-          level.do_fov(creature)
           creature.ai.act(level)
+          level.do_fov(creature)
         end
-      end
-
-      dead_creatures = creatures.find_all { |c| !c.alive }
-      dead_creatures.each do |creature|
-        creatures.delete creature
-        cell = level.lookup creature.x, creature.y
-        cell.creature = nil
-        cell.changed!
       end
 
       level.do_fov(player)
 
       true
+    end
+
+    def ended?
+      return :dead unless player.alive
+      false
     end
 
     private
