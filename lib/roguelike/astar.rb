@@ -5,20 +5,19 @@ module Roguelike
     def find_path(start, goal, assume_goal_is_free = false)
       been_there = {}
       pqueue = PriorityQueue.new
-      pqueue << [1, [start, [], 0]]
+      pqueue.add 1, [start, [], 0]
+      free_goal = assume_goal_is_free ? goal : nil
       while !pqueue.empty?
         spot, path_so_far, cost_so_far = pqueue.next
         next if been_there[spot]
         newpath = path_so_far + [spot]
-        return newpath if (spot == goal)
-        been_there[spot] = 1
-        adjacent_cells(spot, assume_goal_is_free ? goal : nil).each do |newspot|
+        return newpath if spot == goal
+        been_there[spot] = true
+        adjacent_cells(spot, free_goal).each do |newspot|
           next if been_there[newspot]
           tcost = cost(spot, newspot)
-          next unless tcost
           newcost = cost_so_far + tcost
-          pqueue << [newcost + distance(goal, newspot),
-                     [newspot, newpath, newcost]]
+          pqueue.add newcost + distance(goal, newspot), [newspot, newpath, newcost]
         end
       end
       return nil
@@ -46,9 +45,9 @@ module Roguelike
 
     # @param cell [Cell] The starting cell
     # @param other [Cell] Another cell of the grid
-    # @return [Float] The euclidian distance between two cells.
+    # @return [Float] The manhattan distance between two cells.
     def distance(cell, other_cell)
-      Math.sqrt((cell.x - other_cell.x)**2 + (cell.y - other_cell.y)**2)
+      (cell.x - other_cell.x).abs + (cell.y - other_cell.y).abs
     end
 
     class PriorityQueue
@@ -56,11 +55,8 @@ module Roguelike
         @list = []
       end
       def add(priority, item)
-        @list << [priority, @list.length, item]
-        @list.sort_by!{|a| a.first}
-      end
-      def <<(pritem)
-        add(*pritem)
+        index = @list.index { |e| e.first >= priority }
+        @list.insert(index || @list.size, [priority, @list.length, item])
       end
       def next
         @list.shift[2]

@@ -247,7 +247,7 @@ RSpec.describe Roguelike::Level do
     it 'should return a path' do
       start = level_2.lookup(3, 3)
       destination = level_2.lookup(1, 2)
-      expect(level_2.get_path(start, destination).map { |c| coordinates c }).to eq [[3, 3], [2, 3], [1, 2]]
+      expect(level_2.get_path(start, destination).map { |c| coordinates c }).to eq [[3, 3], [2, 2], [1, 2]]
     end
   end
 
